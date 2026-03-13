@@ -2,11 +2,11 @@ import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ConnectWalletButton } from "../ui/ConnectWalletButton";
 
+/** Landing / marketing navbar — Home, How It Works, Docs + wallet connect inside the capsule */
 const navLinks = [
   { label: "Home", path: "/" },
   { label: "How It Works", path: "/how-it-works" },
   { label: "Docs", path: "/docs" },
-  { label: "Privacy", path: "/privacy" },
 ];
 
 export function Navbar() {
@@ -32,7 +32,7 @@ export function Navbar() {
           </div>
         </Link>
 
-        {/* Centered pill nav */}
+        {/* Centered pill nav — 3 marketing links */}
         <div className="hidden md:flex items-center gap-1 px-2 py-1.5 rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)]">
           {navLinks.map((link) => {
             const isActive = location.pathname === link.path;
@@ -52,7 +52,7 @@ export function Navbar() {
           })}
         </div>
 
-        {/* Right actions */}
+        {/* Right — wallet connect */}
         <div className="flex items-center gap-3">
           <ConnectWalletButton />
         </div>

@@ -17,6 +17,8 @@ import { MatchResult } from "./pages/MatchResult";
 import { HowItWorks } from "./pages/HowItWorks";
 import { Privacy } from "./pages/Privacy";
 import { Docs } from "./pages/Docs";
+import { Reputation } from "./pages/Reputation";
+import { Bidding } from "./pages/Bidding";
 
 import "@rainbow-me/rainbowkit/styles.css";
 
@@ -81,6 +83,8 @@ function App() {
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/docs" element={<Docs />} />
+              <Route path="/reputation" element={<Reputation />} />
+              <Route path="/bidding" element={<Bidding />} />
             </Routes>
           </BrowserRouter>
         </AppProviders>

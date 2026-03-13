@@ -93,14 +93,14 @@ export function useMyApplications() {
 
       const appReads = appIds.map((id) => ({
         address: HIRESHIELD_ADDRESS as `0x${string}`,
-        abi: HIRESHIELD_ABI,
+        abi: HIRESHIELD_ABI as any,
         functionName: "applications" as const,
         args: [BigInt(id)] as const,
       }));
 
       const jobReads = uniqueJobIds.map((id) => ({
         address: HIRESHIELD_ADDRESS as `0x${string}`,
-        abi: HIRESHIELD_ABI,
+        abi: HIRESHIELD_ABI as any,
         functionName: "getJob" as const,
         args: [BigInt(id)] as const,
       }));

@@ -11,6 +11,15 @@ contract HireShieldEscrow {
     address public hireshieldContract;
     address public owner;
 
+    // Re-entrancy guard
+    uint256 private _locked = 1;
+    modifier nonReentrant() {
+        require(_locked == 1, "HireShieldEscrow: Reentrant call");
+        _locked = 2;
+        _;
+        _locked = 1;
+    }
+
     mapping(uint256 => address) public jobEscrowRecipient;
     mapping(uint256 => uint256) public jobEscrowAmount;
 
@@ -41,7 +50,7 @@ contract HireShieldEscrow {
 
     /// @notice Release the signing bonus to the matched candidate
     /// @param jobId The job ID
-    function releaseBonus(uint256 jobId) external {
+    function releaseBonus(uint256 jobId) external nonReentrant {
         require(
             msg.sender == hireshieldContract || msg.sender == jobEscrowRecipient[jobId],
             "Only HireShield or recipient"

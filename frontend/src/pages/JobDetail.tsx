@@ -11,7 +11,7 @@ import { GlassCard } from "../components/ui/GlassCard";
 import { EncryptedBadge } from "../components/ui/EncryptedBadge";
 import { StatusPill } from "../components/ui/StatusPill";
 import { LoadingDots } from "../components/ui/LoadingDots";
-import { Navbar } from "../components/layout/Navbar";
+import { AppNavbar } from "../components/layout/AppNavbar";
 import { Footer } from "../components/layout/Footer";
 import { AuroraBackground } from "../components/ui/AuroraBackground";
 import {
@@ -42,7 +42,7 @@ export function JobDetail() {
       <div className="relative min-h-screen bg-background-primary">
         <AuroraBackground />
         <div className="relative z-10">
-          <Navbar />
+          <AppNavbar />
           <div className="flex items-center justify-center py-24">
             <LoadingDots color="cyan" size="md" />
           </div>
@@ -56,7 +56,7 @@ export function JobDetail() {
       <div className="relative min-h-screen bg-background-primary">
         <AuroraBackground />
         <div className="relative z-10">
-          <Navbar />
+          <AppNavbar />
           <div className="max-w-4xl mx-auto p-8">
             <GlassCard className="p-12 text-center" glow="none">
               <p className="text-[rgba(255,255,255,0.4)] text-lg">
@@ -80,7 +80,7 @@ export function JobDetail() {
     <div className="relative min-h-screen bg-background-primary">
       <AuroraBackground />
       <div className="relative z-10">
-        <Navbar />
+        <AppNavbar />
         <main className="max-w-4xl mx-auto p-4 md:p-8">
           {/* Back button */}
           <motion.div

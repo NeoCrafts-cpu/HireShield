@@ -66,15 +66,20 @@ contract HireShield {
 
     mapping(uint256 => Job) public jobs;
     mapping(uint256 => Application) public applications;
-    mapping(uint256 => uint256[]) public jobApplications; // jobId => applicationIds
-    mapping(uint256 => Referral) public referrals;        // applicationId => referral
+    mapping(uint256 => uint256[]) public jobApplications;          // jobId => applicationIds
+    mapping(uint256 => Referral) public referrals;                 // applicationId => referral
     mapping(string => CategoryAnalytics) public categoryAnalytics; // category => analytics
+    mapping(uint256 => mapping(address => bool)) public candidateApplied; // Duplicate guard
+    mapping(uint256 => address) public jobMatchedCandidate;        // O(1) claimBonus lookup
 
     uint256 public jobCounter;
     uint256 public applicationCounter;
 
     address public escrowContract;
-    address public nftContract;   // Soulbound credential NFT
+    address public nftContract;         // Soulbound credential NFT
+    address public reputationContract;  // HireShieldReputation
+    address public biddingContract;     // HireShieldBidding
+    address public stakingContract;     // HireShieldStaking
     address public cofheNode;     // Authorized FHE computation node
     address public owner;         // Contract owner (deployer)
 
@@ -116,6 +121,21 @@ contract HireShield {
     /// @notice Set the NFT credential contract address
     function setNFTContract(address _nft) external onlyOwner {
         nftContract = _nft;
+    }
+
+    /// @notice Set the Reputation contract address
+    function setReputationContract(address _rep) external onlyOwner {
+        reputationContract = _rep;
+    }
+
+    /// @notice Set the Bidding contract address
+    function setBiddingContract(address _bid) external onlyOwner {
+        biddingContract = _bid;
+    }
+
+    /// @notice Set the Staking contract address
+    function setStakingContract(address _staking) external onlyOwner {
+        stakingContract = _staking;
     }
 
     // ═══════════════════════════════════════════════════════
@@ -183,6 +203,8 @@ contract HireShield {
         InEuint32 memory _locationPref
     ) external returns (uint256 applicationId) {
         require(jobs[_jobId].isActive, "HireShield: Job not active");
+        require(!candidateApplied[_jobId][msg.sender], "HireShield: Already applied to this job");
+        candidateApplied[_jobId][msg.sender] = true;
 
         applicationId = ++applicationCounter;
 
@@ -227,6 +249,8 @@ contract HireShield {
         require(jobs[_jobId].isActive, "HireShield: Job not active");
         require(_referrer != address(0), "HireShield: Invalid referrer");
         require(_referrer != msg.sender, "HireShield: Cannot refer yourself");
+        require(!candidateApplied[_jobId][msg.sender], "HireShield: Already applied to this job");
+        candidateApplied[_jobId][msg.sender] = true;
 
         applicationId = ++applicationCounter;
 
@@ -278,6 +302,10 @@ contract HireShield {
         Job storage job = jobs[_jobId];
         require(app.jobId == _jobId, "HireShield: App not for this job");
         require(job.isActive, "HireShield: Job not active");
+        require(
+            msg.sender == job.employer || msg.sender == cofheNode || msg.sender == owner,
+            "HireShield: Only employer or CoFHE node"
+        );
 
         ebool salaryFits = FHE.lte(app.expectedSalaryEncrypted, job.budgetEncrypted);
         ebool experienceMeets = FHE.gte(app.experienceYears, job.experienceRequired);
@@ -316,9 +344,13 @@ contract HireShield {
         uint256 _applicationId
     ) external onlyCofheNode {
         Application storage app = applications[_applicationId];
+        require(app.jobId == _jobId, "HireShield: App not for this job");
+        require(app.qualificationChecked, "HireShield: Qualification not checked first");
+        require(!app.isMatched, "HireShield: Already matched");
         app.isMatched = true;
         jobs[_jobId].isActive = false;
         jobs[_jobId].hasMatch = true;
+        jobMatchedCandidate[_jobId] = app.candidate;
 
         // Auto-transfer signing bonus to escrow for the matched candidate
         uint256 bonus = jobs[_jobId].escrowAmount;
@@ -353,6 +385,7 @@ contract HireShield {
                 analytics.totalSalary = FHE.add(analytics.totalSalary, app.expectedSalaryEncrypted);
             }
             FHE.allowThis(analytics.totalSalary);
+            FHE.allow(analytics.totalSalary, owner); // Owner can decrypt category benchmarks
             analytics.matchCount++;
         }
 
@@ -363,7 +396,7 @@ contract HireShield {
     //  MULTI-ROUND NEGOTIATION
     // ═══════════════════════════════════════════════════════
 
-    /// @notice Candidate submits a counter-offer (re-encrypted salary)
+    /// @notice Candidate submits a counter-offer (re-encrypted salary) — auto re-checks qualification
     function submitCounterOffer(
         uint256 _applicationId,
         InEuint128 memory _newSalary
@@ -373,15 +406,31 @@ contract HireShield {
         require(!app.isMatched, "HireShield: Already matched");
         require(app.negotiationRound < 3, "HireShield: Max negotiation rounds reached");
 
+        Job storage job = jobs[app.jobId];
         euint128 encSalary = FHE.asEuint128(_newSalary);
         app.expectedSalaryEncrypted = encSalary;
-        app.qualificationChecked = false; // Reset for re-check
         app.negotiationRound++;
 
         FHE.allowThis(encSalary);
         FHE.allow(encSalary, msg.sender);
+        FHE.allow(encSalary, job.employer);
+
+        // Inline auto-recheck: recompute 4D qualification with the new salary
+        ebool salaryFits    = FHE.lte(encSalary, job.budgetEncrypted);
+        ebool expMeets      = FHE.gte(app.experienceYears, job.experienceRequired);
+        ebool skillsMeet    = FHE.gte(app.skillScore, job.skillScore);
+        ebool locationMatch = FHE.eq(app.locationPref, job.locationPref);
+        ebool qualified     = FHE.and(FHE.and(salaryFits, expMeets), FHE.and(skillsMeet, locationMatch));
+
+        app.qualificationResult = qualified;
+        app.qualificationChecked = true;
+
+        FHE.allowThis(qualified);
+        FHE.allow(qualified, msg.sender);
+        FHE.allow(qualified, job.employer);
 
         emit NegotiationSubmitted(_applicationId, app.negotiationRound);
+        emit QualificationChecked(app.jobId, _applicationId, msg.sender);
     }
 
     // ═══════════════════════════════════════════════════════
@@ -421,6 +470,22 @@ contract HireShield {
         emit EscrowFunded(_jobId, msg.value);
     }
 
+    /// @notice One-transaction close: deactivate job and reclaim escrow (if no match)
+    function closeAndReclaim(uint256 _jobId) external {
+        Job storage job = jobs[_jobId];
+        require(msg.sender == job.employer, "HireShield: Not employer");
+        require(!job.hasMatch, "HireShield: Has matched candidate - use claimBonus");
+        require(job.escrowAmount > 0, "HireShield: No escrow to reclaim");
+
+        job.isActive = false;
+        uint256 amount = job.escrowAmount;
+        job.escrowAmount = 0;
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "HireShield: Transfer failed");
+
+        emit EscrowReclaimed(_jobId, msg.sender, amount);
+    }
+
     // ═══════════════════════════════════════════════════════
     //  SALARY BAND ANALYTICS (FHE AGGREGATED)
     // ═══════════════════════════════════════════════════════
@@ -443,6 +508,17 @@ contract HireShield {
     function getJobBudgetHandle(uint256 _jobId) external view returns (euint128) {
         require(jobs[_jobId].employer == msg.sender, "Not job owner");
         return jobs[_jobId].budgetEncrypted;
+    }
+
+    /// @notice Returns an application's encrypted salary handle (candidate or employer only)
+    ///         Use cofhejs sealOutput / decryptForView on the returned handle
+    function getApplicationSalaryHandle(uint256 _applicationId) external view returns (euint128) {
+        Application storage app = applications[_applicationId];
+        require(
+            msg.sender == app.candidate || msg.sender == jobs[app.jobId].employer,
+            "HireShield: Not authorized"
+        );
+        return app.expectedSalaryEncrypted;
     }
 
     function getJob(uint256 _jobId) external view returns (
@@ -470,24 +546,15 @@ contract HireShield {
         return (ref.referrer, ref.revealed);
     }
 
-    /// @notice Matched candidate claims the escrow bonus
+    /// @notice Matched candidate claims the escrow bonus (O(1) via jobMatchedCandidate)
     function claimBonus(uint256 _jobId) external {
-        uint256[] storage appIds = jobApplications[_jobId];
-        bool authorized = msg.sender == jobs[_jobId].employer;
-
-        if (!authorized) {
-            for (uint256 i = 0; i < appIds.length; i++) {
-                if (applications[appIds[i]].candidate == msg.sender &&
-                    applications[appIds[i]].isMatched) {
-                    authorized = true;
-                    break;
-                }
-            }
-        }
-
-        require(authorized, "HireShield: Not authorized to claim bonus");
+        address matched = jobMatchedCandidate[_jobId];
+        require(
+            msg.sender == jobs[_jobId].employer ||
+            (matched != address(0) && msg.sender == matched),
+            "HireShield: Not authorized to claim bonus"
+        );
         require(escrowContract != address(0), "HireShield: No escrow configured");
-
         IHireShieldEscrow(escrowContract).releaseBonus(_jobId);
     }
 

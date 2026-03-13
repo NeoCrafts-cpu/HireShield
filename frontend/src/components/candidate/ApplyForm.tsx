@@ -59,7 +59,7 @@ export function ApplyForm({ jobId, jobTitle }: ApplyFormProps) {
           { value: BigInt(experience), type: "euint32" },
           { value: BigInt(skillScore), type: "euint32" },
           { value: BigInt(location), type: "euint32" },
-          { value: BigInt(Math.floor(Math.random() * 1000000)), type: "euint32" },
+          { value: BigInt(referrer) & 0xFFFFFFFFn, type: "euint32" },
         ]);
       } else {
         [encSalary, encExperience, encSkills, encLocation] = await encryptBatch([

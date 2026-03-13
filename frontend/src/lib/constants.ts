@@ -1,14 +1,26 @@
 export const HIRESHIELD_ADDRESS =
   (import.meta.env.VITE_HIRESHIELD_ADDRESS as `0x${string}`) ||
-  "0x4B91743bE751A9f9871eb2cD22472C5a6aa6f26F";
+  "0x1e9d4C1B4A31f66c17438DcAc50d384b3E81D0ea";
 
 export const ESCROW_ADDRESS =
   (import.meta.env.VITE_ESCROW_ADDRESS as `0x${string}`) ||
-  "0xe88235ac739dD5154cd69E56b7232eC1987Cd82D";
+  "0x88A809B6d67c5f6960A37a120f217e975Fa3598D";
 
 export const NFT_ADDRESS =
   (import.meta.env.VITE_NFT_ADDRESS as `0x${string}`) ||
-  "0x580Ba8983A81c9545AA29524F6D4bA18351f3D90";
+  "0x798D54c170Ed78587588f10f02B74F662e4bC20E";
+
+export const REPUTATION_ADDRESS =
+  (import.meta.env.VITE_REPUTATION_ADDRESS as `0x${string}`) ||
+  "0xA78DF0a366BB6FE63b66bD75F14c5AcF00fb2BAa";
+
+export const BIDDING_ADDRESS =
+  (import.meta.env.VITE_BIDDING_ADDRESS as `0x${string}`) ||
+  "0xb4911Ed05a2D66d3C1774675d66dFBc4b8F804D2";
+
+export const STAKING_ADDRESS =
+  (import.meta.env.VITE_STAKING_ADDRESS as `0x${string}`) ||
+  "0x5377B9B0cD5cC0793149fe21DB59070e758c6740";
 
 // InEuint128 / InEuint32 tuple component definition (shared)
 const IN_ENCRYPTED_TUPLE_COMPONENTS = [
@@ -262,6 +274,59 @@ export const HIRESHIELD_ABI = [
     type: "function",
   },
   {
+    inputs: [{ name: "_rep", type: "address" }],
+    name: "setReputationContract",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "_bid", type: "address" }],
+    name: "setBiddingContract",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "_staking", type: "address" }],
+    name: "setStakingContract",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  // ── New: getApplicationSalaryHandle ──
+  {
+    inputs: [{ name: "_applicationId", type: "uint256" }],
+    name: "getApplicationSalaryHandle",
+    outputs: [{ name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  // ── New: closeAndReclaim (one-tx close+reclaim) ──
+  {
+    inputs: [{ name: "_jobId", type: "uint256" }],
+    name: "closeAndReclaim",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  // ── New: jobMatchedCandidate mapping ──
+  {
+    inputs: [{ name: "", type: "uint256" }],
+    name: "jobMatchedCandidate",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  // ── New: candidateApplied mapping ──
+  {
+    inputs: [{ name: "", type: "uint256" }, { name: "", type: "address" }],
+    name: "candidateApplied",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [{ name: "_jobId", type: "uint256" }],
     name: "claimBonus",
     outputs: [],
@@ -414,6 +479,28 @@ export const HIRESHIELD_ABI = [
     name: "ReferralRevealed",
     type: "event",
   },
+  // ── New contract address getters ──
+  {
+    inputs: [],
+    name: "reputationContract",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "biddingContract",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "stakingContract",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
 ] as const;
 
 export const ESCROW_ABI = [
@@ -487,5 +574,306 @@ export const HIRESHIELD_NFT_ABI = [
     outputs: [{ name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
+  },
+] as const;
+
+// ─── HireShieldReputation ABI ───────────────────────────────
+export const REPUTATION_ABI = [
+  {
+    inputs: [{ name: "_hireshield", type: "address" }],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
+  {
+    inputs: [
+      { name: "candidate", type: "address" },
+      { name: "employer", type: "address" },
+      { name: "encRating", type: "tuple", components: [
+        { name: "ctHash", type: "uint256" },
+        { name: "securityZone", type: "uint8" },
+        { name: "utype", type: "uint8" },
+        { name: "signature", type: "bytes" },
+      ]},
+    ],
+    name: "rateCandidate",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "candidate", type: "address" }],
+    name: "getScore",
+    outputs: [{ name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "candidate", type: "address" },
+      { name: "encThreshold", type: "tuple", components: [
+        { name: "ctHash", type: "uint256" },
+        { name: "securityZone", type: "uint8" },
+        { name: "utype", type: "uint8" },
+        { name: "signature", type: "bytes" },
+      ]},
+    ],
+    name: "checkThreshold",
+    outputs: [{ name: "result", type: "bytes32" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "candidate", type: "address" }],
+    name: "hasScore",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "candidate", type: "address" }],
+    name: "getRatingCount",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "candidate", type: "address" },
+      { indexed: false, name: "ratingCount", type: "uint256" },
+    ],
+    name: "ReputationUpdated",
+    type: "event",
+  },
+] as const;
+
+// ─── HireShieldBidding ABI ──────────────────────────────────
+export const BIDDING_ABI = [
+  {
+    inputs: [
+      { name: "durationSeconds", type: "uint256" },
+      { name: "jobId", type: "uint256" },
+    ],
+    name: "openAuction",
+    outputs: [{ name: "auctionId", type: "uint256" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "auctionId", type: "uint256" },
+      { name: "encBid", type: "tuple", components: [
+        { name: "ctHash", type: "uint256" },
+        { name: "securityZone", type: "uint8" },
+        { name: "utype", type: "uint8" },
+        { name: "signature", type: "bytes" },
+      ]},
+    ],
+    name: "placeBid",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "auctionId", type: "uint256" }],
+    name: "resolveAuction",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "auctionId", type: "uint256" }],
+    name: "acceptBid",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "auctionId", type: "uint256" }],
+    name: "declineAuction",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "auctionId", type: "uint256" }],
+    name: "getWinningBid",
+    outputs: [{ name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "auctionId", type: "uint256" }],
+    name: "getMyBid",
+    outputs: [{ name: "", type: "bytes32" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "auctionId", type: "uint256" }],
+    name: "getAuction",
+    outputs: [
+      { name: "candidate", type: "address" },
+      { name: "active", type: "bool" },
+      { name: "resolved", type: "bool" },
+      { name: "bidCount", type: "uint256" },
+      { name: "endTime", type: "uint256" },
+      { name: "winnerEmployer", type: "address" },
+      { name: "hireshieldJobId", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "auctionCounter",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "auctionId", type: "uint256" }, { name: "employer", type: "address" }],
+    name: "hasBid",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "auctionId", type: "uint256" },
+      { indexed: true, name: "candidate", type: "address" },
+      { indexed: false, name: "endTime", type: "uint256" },
+    ],
+    name: "AuctionOpened",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "auctionId", type: "uint256" },
+      { indexed: false, name: "bidIndex", type: "uint256" },
+      { indexed: true, name: "employer", type: "address" },
+    ],
+    name: "BidPlaced",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "auctionId", type: "uint256" },
+      { indexed: true, name: "winnerEmployer", type: "address" },
+    ],
+    name: "AuctionResolved",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "auctionId", type: "uint256" },
+      { indexed: true, name: "candidate", type: "address" },
+      { indexed: true, name: "employer", type: "address" },
+    ],
+    name: "BidAccepted",
+    type: "event",
+  },
+] as const;
+
+// ─── HireShieldStaking ABI ──────────────────────────────────
+export const STAKING_ABI = [
+  {
+    inputs: [{ name: "jobId", type: "uint256" }],
+    name: "stakeForJob",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "jobId", type: "uint256" }],
+    name: "recordMatch",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "jobId", type: "uint256" }, { name: "employer", type: "address" }],
+    name: "returnStake",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "jobId", type: "uint256" }],
+    name: "slash",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "withdrawTreasury",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "employer", type: "address" }],
+    name: "isEligible",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "jobId", type: "uint256" }],
+    name: "isSlashable",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "jobId", type: "uint256" }],
+    name: "slashWindowRemaining",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "jobId", type: "uint256" }],
+    name: "jobStakes",
+    outputs: [
+      { name: "amount", type: "uint256" },
+      { name: "active", type: "bool" },
+      { name: "matchTime", type: "uint256" },
+      { name: "slashed", type: "bool" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "MIN_STAKE",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "employer", type: "address" },
+      { indexed: false, name: "jobId", type: "uint256" },
+      { indexed: false, name: "amount", type: "uint256" },
+    ],
+    name: "Staked",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "employer", type: "address" },
+      { indexed: false, name: "jobId", type: "uint256" },
+      { indexed: false, name: "amount", type: "uint256" },
+    ],
+    name: "StakeSlashed",
+    type: "event",
   },
 ] as const;

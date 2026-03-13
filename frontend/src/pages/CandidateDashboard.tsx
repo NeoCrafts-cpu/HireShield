@@ -4,8 +4,7 @@ import { JobCard } from "../components/employer/JobCard";
 import { MatchCard } from "../components/candidate/MatchCard";
 import { GlassCard } from "../components/ui/GlassCard";
 import { LoadingDots } from "../components/ui/LoadingDots";
-import { Navbar } from "../components/layout/Navbar";
-import { Sidebar } from "../components/layout/Sidebar";
+import { AppNavbar } from "../components/layout/AppNavbar";
 import { Footer } from "../components/layout/Footer";
 import { AuroraBackground } from "../components/ui/AuroraBackground";
 import { useJobList, useJob, useMyApplications } from "../hooks/useJobList";
@@ -60,10 +59,8 @@ export function CandidateDashboard() {
     <div className="relative min-h-screen bg-background-primary">
       <AuroraBackground />
       <div className="relative z-10">
-        <Navbar />
-        <div className="flex">
-          <Sidebar />
-          <main className="flex-1 p-4 md:p-8 max-w-5xl">
+        <AppNavbar />
+        <main className="flex-1 p-4 md:p-8 max-w-5xl mx-auto">
             {/* Header */}
             <motion.div
               className="mb-8"
@@ -229,7 +226,6 @@ export function CandidateDashboard() {
               </div>
             ) : null}
           </main>
-        </div>
         <Footer />
       </div>
     </div>

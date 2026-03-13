@@ -31,7 +31,7 @@ export function useEmployerApplications(jobId?: number) {
 
       const reads = ids.map((id) => ({
         address: HIRESHIELD_ADDRESS as `0x${string}`,
-        abi: HIRESHIELD_ABI,
+        abi: HIRESHIELD_ABI as any,
         functionName: "applications" as const,
         args: [id] as const,
       }));

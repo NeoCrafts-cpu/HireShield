@@ -55,15 +55,54 @@ async function main() {
   await setNftTx.wait();
   console.log("HireShield linked to NFT ✅");
 
+  // ─── Deploy new Phase 3 contracts ─────────────────────────
+
+  // Deploy HireShieldReputation (requires HireShield address)
+  const Reputation = await ethers.deployContract("HireShieldReputation", [hireShieldAddress]);
+  await Reputation.waitForDeployment();
+  const reputationAddress = await Reputation.getAddress();
+  console.log("HireShieldReputation deployed to:", reputationAddress);
+
+  // Deploy HireShieldBidding (no constructor args)
+  const Bidding = await ethers.deployContract("HireShieldBidding", []);
+  await Bidding.waitForDeployment();
+  const biddingAddress = await Bidding.getAddress();
+  console.log("HireShieldBidding deployed to:", biddingAddress);
+
+  // Deploy HireShieldStaking (requires HireShield address)
+  const Staking = await ethers.deployContract("HireShieldStaking", [hireShieldAddress]);
+  await Staking.waitForDeployment();
+  const stakingAddress = await Staking.getAddress();
+  console.log("HireShieldStaking deployed to:", stakingAddress);
+
+  // Register all three new contracts with HireShield
+  const setRepTx = await HireShield.setReputationContract(reputationAddress);
+  await setRepTx.wait();
+  console.log("HireShield linked to Reputation ✅");
+
+  const setBidTx = await HireShield.setBiddingContract(biddingAddress);
+  await setBidTx.wait();
+  console.log("HireShield linked to Bidding ✅");
+
+  const setStakingTx = await HireShield.setStakingContract(stakingAddress);
+  await setStakingTx.wait();
+  console.log("HireShield linked to Staking ✅");
+
   console.log("\n--- Deployment Summary ---");
   console.log("HireShieldEscrow:", escrowAddress);
   console.log("HireShield:", hireShieldAddress);
   console.log("HireShieldNFT:", nftAddress);
+  console.log("HireShieldReputation:", reputationAddress);
+  console.log("HireShieldBidding:", biddingAddress);
+  console.log("HireShieldStaking:", stakingAddress);
   console.log("CoFHE Node:", cofheNodeAddress);
   console.log("\nUpdate your frontend/.env with:");
   console.log(`VITE_HIRESHIELD_ADDRESS=${hireShieldAddress}`);
   console.log(`VITE_ESCROW_ADDRESS=${escrowAddress}`);
   console.log(`VITE_NFT_ADDRESS=${nftAddress}`);
+  console.log(`VITE_REPUTATION_ADDRESS=${reputationAddress}`);
+  console.log(`VITE_BIDDING_ADDRESS=${biddingAddress}`);
+  console.log(`VITE_STAKING_ADDRESS=${stakingAddress}`);
 }
 
 main().catch((error) => {

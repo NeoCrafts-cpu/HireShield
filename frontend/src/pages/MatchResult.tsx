@@ -11,11 +11,12 @@ import { EncryptedBadge } from "../components/ui/EncryptedBadge";
 import { StatusPill } from "../components/ui/StatusPill";
 import { LoadingDots } from "../components/ui/LoadingDots";
 import { FHEStatusIndicator } from "../components/shared/FHEStatusIndicator";
-import { Navbar } from "../components/layout/Navbar";
+import { AppNavbar } from "../components/layout/AppNavbar";
 import { Footer } from "../components/layout/Footer";
 import { AuroraBackground } from "../components/ui/AuroraBackground";
 import { txUrl, addressUrl } from "../lib/etherscan";
 import { HIRESHIELD_ADDRESS } from "../lib/constants";
+import { useDecryptApplicationSalary, useHasActivePermit, formatDecryptedSalary } from "../hooks/useFHEDecrypt";
 import {
   CheckCircle,
   XCircle,
@@ -23,6 +24,7 @@ import {
   ArrowLeft,
   Coins,
   Lock,
+  Unlock,
   PartyPopper,
   ExternalLink,
   RefreshCw,
@@ -39,6 +41,12 @@ export function MatchResult() {
   const { claimBonus, isClaiming, escrowAmount } = useEscrow(jobId);
   const { negotiationRound, canNegotiate, submitCounterOffer, isPending: isNegotiating } = useNegotiation(applicationId);
   const [counterSalary, setCounterSalary] = useState("");
+  const [salaryRevealed, setSalaryRevealed] = useState(false);
+  const hasPermit = useHasActivePermit();
+
+  const appIdBigInt = applicationId !== undefined ? BigInt(applicationId) : undefined;
+  const { value: decryptedSalary, isLoading: isDecryptingSalary, disabledDueToMissingPermit } =
+    useDecryptApplicationSalary(salaryRevealed ? appIdBigInt : undefined);
 
   const handleAccept = async () => {
     if (!jobId) return;
@@ -81,7 +89,7 @@ export function MatchResult() {
       <div className="relative min-h-screen bg-background-primary">
         <AuroraBackground />
         <div className="relative z-10">
-          <Navbar />
+          <AppNavbar />
           <div className="flex items-center justify-center py-24">
             <LoadingDots color="green" size="md" />
           </div>
@@ -94,7 +102,7 @@ export function MatchResult() {
     <div className="relative min-h-screen bg-background-primary">
       <AuroraBackground />
       <div className="relative z-10">
-        <Navbar />
+        <AppNavbar />
         <main className="max-w-3xl mx-auto p-4 md:p-8">
           <motion.div
             initial={{ opacity: 0, x: -10 }}
@@ -200,13 +208,47 @@ export function MatchResult() {
                   <div className="text-xs text-[rgba(255,255,255,0.4)] uppercase tracking-wider mb-2">
                     Your Expectation
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-neon-violet" />
-                    <code className="text-neon-violet text-sm">
-                      0x████...████
-                    </code>
+                  {salaryRevealed && decryptedSalary !== undefined ? (
+                    <div className="flex items-center gap-2">
+                      <Unlock className="w-4 h-4 text-neon-green" />
+                      <span className="text-neon-green text-sm font-bold font-mono">
+                        {formatDecryptedSalary(decryptedSalary)}
+                      </span>
+                    </div>
+                  ) : salaryRevealed && isDecryptingSalary ? (
+                    <LoadingDots color="violet" />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-neon-violet" />
+                      <code className="text-neon-violet text-sm">0x████...████</code>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 mt-2">
+                    <EncryptedBadge label="Sealed" size="sm" />
+                    {!salaryRevealed ? (
+                      <button
+                        onClick={() => {
+                          if (!hasPermit) {
+                            import("react-hot-toast").then(({ default: toast }) =>
+                              toast.error("Generate a CoFHE permit first")
+                            );
+                            return;
+                          }
+                          setSalaryRevealed(true);
+                        }}
+                        className="text-xs text-neon-cyan underline hover:no-underline"
+                      >
+                        Reveal
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setSalaryRevealed(false)}
+                        className="text-xs text-text-secondary underline hover:no-underline"
+                      >
+                        Hide
+                      </button>
+                    )}
                   </div>
-                  <EncryptedBadge label="Sealed" size="sm" />
                 </div>
               </div>
 
