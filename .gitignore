@@ -1,0 +1,10 @@
+node_modules/
+dist/
+cache/
+artifacts/
+typechain-types/
+coverage/
+.env
+frontend/node_modules/
+frontend/dist/
+*.log

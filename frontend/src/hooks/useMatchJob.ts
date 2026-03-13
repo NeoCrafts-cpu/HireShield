@@ -1,0 +1,37 @@
+import { useReadContract, useAccount } from "wagmi";
+import { HIRESHIELD_ABI, HIRESHIELD_ADDRESS } from "../lib/constants";
+
+interface MatchResult {
+  isMatched: boolean;
+  candidate: string;
+  jobId: bigint;
+}
+
+export function useMatchJob(applicationId: number | undefined) {
+  const { address } = useAccount();
+
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: HIRESHIELD_ADDRESS,
+    abi: HIRESHIELD_ABI,
+    functionName: "applications",
+    args: applicationId !== undefined ? [BigInt(applicationId)] : undefined,
+    query: {
+      enabled: applicationId !== undefined,
+    },
+  });
+
+  const matchResult: MatchResult | undefined = data
+    ? {
+        candidate: (data as any)[0],
+        isMatched: (data as any)[3],
+        jobId: (data as any)[4],
+      }
+    : undefined;
+
+  return {
+    matchResult,
+    isLoading,
+    error,
+    refetch,
+  };
+}

@@ -1,0 +1,49 @@
+{
+  "name": "hireshield-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "postinstall": "node scripts/patch-cofhe.cjs && node scripts/patch-workers.cjs"
+  },
+  "dependencies": {
+    "@cofhe/abi": "^0.4.0",
+    "@cofhe/react": "^0.4.0",
+    "@cofhe/sdk": "^0.4.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@headlessui/react": "^2.2.0",
+    "@rainbow-me/rainbowkit": "^2.1.7",
+    "@reineira-os/sdk": "^0.2.0",
+    "@tanstack/react-query": "^5.60.5",
+    "clsx": "^2.1.0",
+    "framer-motion": "^11.12.0",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.0",
+    "react-countup": "^6.5.0",
+    "react-dom": "^18.3.0",
+    "react-hot-toast": "^2.4.0",
+    "react-intersection-observer": "^9.13.0",
+    "react-is": "^19.2.4",
+    "react-router-dom": "^6.28.0",
+    "tailwind-merge": "^2.6.0",
+    "viem": "^2.21.54",
+    "wagmi": "^2.13.0",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.5.2",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.4.0",
+    "vite": "^6.3.5",
+    "vite-plugin-top-level-await": "^1.6.0",
+    "vite-plugin-wasm": "^3.6.0"
+  }
+}
