@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Github,
   Briefcase,
+  BookOpen,
 } from "lucide-react";
 import { AuroraBackground } from "../components/ui/AuroraBackground";
 import { GlassCard } from "../components/ui/GlassCard";
@@ -149,14 +150,12 @@ export function Landing() {
                   Get Started <ChevronRight className="w-4 h-4" />
                 </motion.button>
                 <motion.button
-                  onClick={() =>
-                    window.open("https://github.com/FhenixProtocol/awesome-fhenix", "_blank")
-                  }
+                  onClick={() => navigate("/docs")}
                   className="flex items-center gap-2 px-7 py-3.5 rounded-full border border-[rgba(255,255,255,0.15)] text-white font-semibold text-base hover:border-[rgba(255,255,255,0.35)] hover:bg-[rgba(255,255,255,0.04)] transition-all"
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                 >
-                  <Github className="w-5 h-5" />
+                  <BookOpen className="w-5 h-5" />
                   Documentation
                 </motion.button>
               </div>
