@@ -29,6 +29,7 @@ contract HireShield {
         euint32 skillScore;              // Encrypted min skill level (1-100)
         euint32 locationPref;            // Encrypted location code
         bool isActive;
+        bool hasMatch;                  // Gas-optimized: skip loop in reclaimEscrow
         uint256 escrowAmount;           // Signing bonus locked (ETH)
         uint256 applicationCount;
         string title;
@@ -121,52 +122,8 @@ contract HireShield {
     //  JOB POSTING
     // ═══════════════════════════════════════════════════════
 
-    /// @notice Employer posts a job with multi-dimensional encrypted requirements
+    /// @notice Employer posts a job (with optional category). Pass empty string for no category.
     function postJob(
-        InEuint128 memory _budget,
-        InEuint32 memory _experienceRequired,
-        InEuint32 memory _skillScore,
-        InEuint32 memory _locationPref,
-        string calldata _title,
-        string calldata _description
-    ) external payable returns (uint256 jobId) {
-        jobId = ++jobCounter;
-
-        euint128 encBudget = FHE.asEuint128(_budget);
-        euint32 encExp = FHE.asEuint32(_experienceRequired);
-        euint32 encSkills = FHE.asEuint32(_skillScore);
-        euint32 encLoc = FHE.asEuint32(_locationPref);
-
-        Job storage j = jobs[jobId];
-        j.employer = msg.sender;
-        j.budgetEncrypted = encBudget;
-        j.experienceRequired = encExp;
-        j.skillScore = encSkills;
-        j.locationPref = encLoc;
-        j.isActive = true;
-        j.escrowAmount = msg.value;
-        j.title = _title;
-        j.description = _description;
-
-        // ACL: grant this contract + employer access to all ciphertexts
-        FHE.allowThis(encBudget);
-        FHE.allowThis(encExp);
-        FHE.allowThis(encSkills);
-        FHE.allowThis(encLoc);
-        FHE.allow(encBudget, msg.sender);
-        FHE.allow(encExp, msg.sender);
-        FHE.allow(encSkills, msg.sender);
-        FHE.allow(encLoc, msg.sender);
-
-        if (msg.value > 0) {
-            emit EscrowFunded(jobId, msg.value);
-        }
-
-        emit JobPosted(jobId, msg.sender, _title);
-    }
-
-    /// @notice Employer posts a job with category for analytics
-    function postJobWithCategory(
         InEuint128 memory _budget,
         InEuint32 memory _experienceRequired,
         InEuint32 memory _skillScore,
@@ -192,8 +149,11 @@ contract HireShield {
         j.escrowAmount = msg.value;
         j.title = _title;
         j.description = _description;
-        j.category = _category;
+        if (bytes(_category).length > 0) {
+            j.category = _category;
+        }
 
+        // ACL: grant this contract + employer access to all ciphertexts
         FHE.allowThis(encBudget);
         FHE.allowThis(encExp);
         FHE.allowThis(encSkills);
@@ -285,11 +245,8 @@ contract HireShield {
         app.jobId = _jobId;
         app.referrer = _referrer;
 
-        referrals[applicationId] = Referral({
-            referrer: _referrer,
-            encryptedReferrerId: encRefId,
-            revealed: false
-        });
+        referrals[applicationId].referrer = _referrer;
+        referrals[applicationId].encryptedReferrerId = encRefId;
 
         FHE.allowThis(encSalary);
         FHE.allowThis(encExp);
@@ -361,6 +318,7 @@ contract HireShield {
         Application storage app = applications[_applicationId];
         app.isMatched = true;
         jobs[_jobId].isActive = false;
+        jobs[_jobId].hasMatch = true;
 
         // Auto-transfer signing bonus to escrow for the matched candidate
         uint256 bonus = jobs[_jobId].escrowAmount;
@@ -430,18 +388,13 @@ contract HireShield {
     //  ESCROW MANAGEMENT
     // ═══════════════════════════════════════════════════════
 
-    /// @notice Employer reclaims escrow from an unmatched job
+    /// @notice Employer reclaims escrow from an unmatched job (O(1) gas)
     function reclaimEscrow(uint256 _jobId) external {
         Job storage job = jobs[_jobId];
         require(msg.sender == job.employer, "HireShield: Not employer");
         require(!job.isActive, "HireShield: Job still active - deactivate first");
         require(job.escrowAmount > 0, "HireShield: No escrow to reclaim");
-
-        // Ensure no matched application exists
-        uint256[] storage appIds = jobApplications[_jobId];
-        for (uint256 i = 0; i < appIds.length; i++) {
-            require(!applications[appIds[i]].isMatched, "HireShield: Has matched candidate - escrow was released");
-        }
+        require(!job.hasMatch, "HireShield: Has matched candidate - escrow was released");
 
         uint256 amount = job.escrowAmount;
         job.escrowAmount = 0;

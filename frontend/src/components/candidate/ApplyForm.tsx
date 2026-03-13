@@ -32,7 +32,7 @@ export function ApplyForm({ jobId, jobTitle }: ApplyFormProps) {
   const [referrer, setReferrer] = useState("");
   const [step, setStep] = useState<"form" | "encrypting" | "confirming">("form");
 
-  const { encrypt } = useFHEEncrypt();
+  const { encrypt, encryptBatch, isFheReady } = useFHEEncrypt();
   const { writeContractAsync, isPending } = useWriteContract();
 
   const handleApply = async () => {
@@ -41,32 +41,51 @@ export function ApplyForm({ jobId, jobTitle }: ApplyFormProps) {
       return;
     }
 
+    if (!isFheReady) {
+      toast.error("FHE client is still initializing. Please wait a moment.");
+      return;
+    }
+
     try {
       setStep("encrypting");
 
-      // Encrypt all 4 dimensions via CoFHE SDK
-      const encSalary = await encrypt(BigInt(expectedSalary), "euint128");
-      const encExperience = await encrypt(BigInt(experience), "euint32");
-      const encSkills = await encrypt(BigInt(skillScore), "euint32");
-      const encLocation = await encrypt(BigInt(location), "euint32");
+      const hasReferral = referrer && referrer.startsWith("0x") && referrer.length === 42;
+
+      // Batch-encrypt all values in a single round-trip
+      let encSalary: any, encExperience: any, encSkills: any, encLocation: any, encReferrerId: any;
+      if (hasReferral) {
+        [encSalary, encExperience, encSkills, encLocation, encReferrerId] = await encryptBatch([
+          { value: BigInt(expectedSalary), type: "euint128" },
+          { value: BigInt(experience), type: "euint32" },
+          { value: BigInt(skillScore), type: "euint32" },
+          { value: BigInt(location), type: "euint32" },
+          { value: BigInt(Math.floor(Math.random() * 1000000)), type: "euint32" },
+        ]);
+      } else {
+        [encSalary, encExperience, encSkills, encLocation] = await encryptBatch([
+          { value: BigInt(expectedSalary), type: "euint128" },
+          { value: BigInt(experience), type: "euint32" },
+          { value: BigInt(skillScore), type: "euint32" },
+          { value: BigInt(location), type: "euint32" },
+        ]);
+      }
 
       setStep("confirming");
 
       let hash: string | undefined;
-      if (referrer && referrer.startsWith("0x") && referrer.length === 42) {
-        const encReferrerId = await encrypt(BigInt(Math.floor(Math.random() * 1000000)), "euint32");
+      if (hasReferral) {
         hash = await writeContractAsync({
           address: HIRESHIELD_ADDRESS,
           abi: HIRESHIELD_ABI,
           functionName: "applyWithReferral",
-          args: [BigInt(jobId), encSalary as any, encExperience as any, encSkills as any, encLocation as any, referrer as `0x${string}`, encReferrerId as any],
+          args: [BigInt(jobId), encSalary, encExperience, encSkills, encLocation, referrer as `0x${string}`, encReferrerId],
         });
       } else {
         hash = await writeContractAsync({
           address: HIRESHIELD_ADDRESS,
           abi: HIRESHIELD_ABI,
           functionName: "applyToJob",
-          args: [BigInt(jobId), encSalary as any, encExperience as any, encSkills as any, encLocation as any],
+          args: [BigInt(jobId), encSalary, encExperience, encSkills, encLocation],
         });
       }
 

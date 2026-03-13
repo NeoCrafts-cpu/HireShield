@@ -35,22 +35,7 @@ export const HIRESHIELD_ABI = [
     name: "InvalidEncryptedInput",
     type: "error",
   },
-  // ── postJob (original, backwards-compatible) ──
-  {
-    inputs: [
-      { name: "_budget", type: "tuple", components: IN_ENCRYPTED_TUPLE_COMPONENTS },
-      { name: "_experienceRequired", type: "tuple", components: IN_ENCRYPTED_TUPLE_COMPONENTS },
-      { name: "_skillScore", type: "tuple", components: IN_ENCRYPTED_TUPLE_COMPONENTS },
-      { name: "_locationPref", type: "tuple", components: IN_ENCRYPTED_TUPLE_COMPONENTS },
-      { name: "_title", type: "string" },
-      { name: "_description", type: "string" },
-    ],
-    name: "postJob",
-    outputs: [{ name: "jobId", type: "uint256" }],
-    stateMutability: "payable",
-    type: "function",
-  },
-  // ── postJobWithCategory ──
+  // ── postJob (unified: includes optional category) ──
   {
     inputs: [
       { name: "_budget", type: "tuple", components: IN_ENCRYPTED_TUPLE_COMPONENTS },
@@ -61,7 +46,7 @@ export const HIRESHIELD_ABI = [
       { name: "_description", type: "string" },
       { name: "_category", type: "string" },
     ],
-    name: "postJobWithCategory",
+    name: "postJob",
     outputs: [{ name: "jobId", type: "uint256" }],
     stateMutability: "payable",
     type: "function",
@@ -313,6 +298,7 @@ export const HIRESHIELD_ABI = [
       { name: "skillScore", type: "bytes32" },
       { name: "locationPref", type: "bytes32" },
       { name: "isActive", type: "bool" },
+      { name: "hasMatch", type: "bool" },
       { name: "escrowAmount", type: "uint256" },
       { name: "applicationCount", type: "uint256" },
       { name: "title", type: "string" },

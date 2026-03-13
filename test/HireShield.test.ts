@@ -35,7 +35,8 @@ describe("HireShield", function () {
       encSkills,
       encLoc,
       "Senior Dev",
-      "Build FHE apps"
+      "Build FHE apps",
+      ""
     );
 
     const job = await HireShield.getJob(1);
@@ -71,7 +72,8 @@ describe("HireShield", function () {
       encSkillReq,
       encLocReq,
       "Solidity Dev",
-      "Build smart contracts"
+      "Build smart contracts",
+      ""
     );
 
     const [encSalary, encExp, encSkills, encLoc] = await candidateClient
@@ -147,6 +149,7 @@ describe("HireShield", function () {
       encLoc,
       "FHE Engineer",
       "Work on CoFHE",
+      "",
       { value: escrowValue }
     );
 
@@ -178,7 +181,7 @@ describe("HireShield", function () {
       .execute();
     await HireShield.connect(employer).postJob(
       encBudget, encExpReq, encSkillReq, encLocReq,
-      "Lead Engineer", "Build privacy apps"
+      "Lead Engineer", "Build privacy apps", ""
     );
 
     // Apply: salary 120k, 5yr exp, 85 skills, location 1

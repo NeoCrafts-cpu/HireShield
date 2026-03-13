@@ -59,6 +59,7 @@ describe("E2E: Full Hiring Flow", function () {
       encBudget, encExpReq, encSkillReq, encLocReq,
       "Lead Solidity Engineer",
       "Build privacy-first dApps with FHE",
+      "",
       { value: bonusAmount }
     );
     await postTx.wait();
@@ -159,7 +160,7 @@ describe("E2E: Full Hiring Flow", function () {
     );
     await HireShield.connect(employer).postJob(
       encBudget, encExp, encSkills, encLoc,
-      "Junior Dev", "Entry level"
+      "Junior Dev", "Entry level", ""
     );
 
     const [encSal1, encExp1, encSk1, encLoc1] = await encryptCandidateCreds(
@@ -203,7 +204,7 @@ describe("E2E: Full Hiring Flow", function () {
     );
     await HireShield.connect(employer).postJob(
       encBudget, encExp, encSkills, encLoc,
-      "Test Job", "Testing"
+      "Test Job", "Testing", ""
     );
 
     const [encSal, encExpC, encSkC, encLocC] = await encryptCandidateCreds(
@@ -241,7 +242,7 @@ describe("E2E: Full Hiring Flow", function () {
     );
     await HireShield.connect(employer).postJob(
       encBudget, encExp, encSkills, encLoc,
-      "Staff Engineer", "Lead the team"
+      "Staff Engineer", "Lead the team", ""
     );
 
     // Three candidates apply

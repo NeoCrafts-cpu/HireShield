@@ -31,7 +31,7 @@ export function PostJobForm() {
   const [category, setCategory] = useState("");
   const [step, setStep] = useState<"form" | "encrypting" | "confirming">("form");
 
-  const { encrypt, isEncrypting, isFheReady } = useFHEEncrypt();
+  const { encryptBatch, isEncrypting, isFheReady } = useFHEEncrypt();
   const { writeContractAsync, isPending } = useWriteContract();
 
   const handleSubmit = async () => {
@@ -48,24 +48,21 @@ export function PostJobForm() {
     try {
       setStep("encrypting");
 
-      // Encrypt all 4 dimensions via CoFHE SDK
-      const encBudget = await encrypt(BigInt(budget), "euint128");
-      const encExperience = await encrypt(BigInt(experience), "euint32");
-      const encSkills = await encrypt(BigInt(skillScore), "euint32");
-      const encLocation = await encrypt(BigInt(location), "euint32");
+      // Batch-encrypt all 4 dimensions in a single round-trip (4x faster)
+      const [encBudget, encExperience, encSkills, encLocation] = await encryptBatch([
+        { value: BigInt(budget), type: "euint128" },
+        { value: BigInt(experience), type: "euint32" },
+        { value: BigInt(skillScore), type: "euint32" },
+        { value: BigInt(location), type: "euint32" },
+      ]);
 
       setStep("confirming");
-
-      const fnName = category ? "postJobWithCategory" : "postJob";
-      const args = category
-        ? [encBudget as any, encExperience as any, encSkills as any, encLocation as any, title, description, category]
-        : [encBudget as any, encExperience as any, encSkills as any, encLocation as any, title, description];
 
       const hash = await writeContractAsync({
         address: HIRESHIELD_ADDRESS,
         abi: HIRESHIELD_ABI,
-        functionName: fnName,
-        args: args as any,
+        functionName: "postJob",
+        args: [encBudget as any, encExperience as any, encSkills as any, encLocation as any, title, description, category || ""] as any,
         value: parseEther(escrowBonus || "0"),
       });
 
