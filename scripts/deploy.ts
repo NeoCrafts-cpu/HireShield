@@ -7,7 +7,6 @@ async function main() {
     process.env.COFHE_NODE_ADDRESS && process.env.COFHE_NODE_ADDRESS !== ethers.ZeroAddress
       ? process.env.COFHE_NODE_ADDRESS
       : deployer.address;
-  const privaraAddress = process.env.PRIVARA_ESCROW_ADDRESS || ethers.ZeroAddress;
 
   console.log(`\nDeploying to: ${network.name} (chainId: ${(await ethers.provider.getNetwork()).chainId})`);
   console.log("Deployer account:", deployer.address);
@@ -18,10 +17,9 @@ async function main() {
     throw new Error("Deployer account has 0 ETH. Fund it with Sepolia ETH from https://sepoliafaucet.com");
   }
 
-  // Deploy Escrow first
+  // Deploy Escrow first (with placeholder HireShield address)
   const Escrow = await ethers.deployContract("HireShieldEscrow", [
-    ethers.ZeroAddress, // Will be updated after HireShield deploys
-    privaraAddress,
+    ethers.ZeroAddress,
   ]);
   await Escrow.waitForDeployment();
   const escrowAddress = await Escrow.getAddress();
@@ -36,11 +34,15 @@ async function main() {
   const hireShieldAddress = await HireShield.getAddress();
   console.log("HireShield deployed to:", hireShieldAddress);
 
+  // Link escrow to HireShield (so auto-release works)
+  const linkTx = await Escrow.setHireShieldContract(hireShieldAddress);
+  await linkTx.wait();
+  console.log("Escrow linked to HireShield ✅");
+
   console.log("\n--- Deployment Summary ---");
   console.log("HireShieldEscrow:", escrowAddress);
   console.log("HireShield:", hireShieldAddress);
   console.log("CoFHE Node:", cofheNodeAddress);
-  console.log("Privara Escrow:", privaraAddress);
   console.log("\nUpdate your frontend/.env with:");
   console.log(`VITE_HIRESHIELD_ADDRESS=${hireShieldAddress}`);
   console.log(`VITE_ESCROW_ADDRESS=${escrowAddress}`);

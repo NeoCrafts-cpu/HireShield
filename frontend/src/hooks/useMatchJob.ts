@@ -23,8 +23,8 @@ export function useMatchJob(applicationId: number | undefined) {
   const matchResult: MatchResult | undefined = data
     ? {
         candidate: (data as any)[0],
-        isMatched: (data as any)[3],
-        jobId: (data as any)[4],
+        isMatched: (data as any)[7],
+        jobId: (data as any)[8],
       }
     : undefined;
 

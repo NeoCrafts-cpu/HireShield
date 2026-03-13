@@ -22,12 +22,12 @@ export function Footer() {
             Fhenix CoFHE
           </a>
           <a
-            href="https://reineira.xyz/docs"
+            href="https://sepolia.etherscan.io/"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-neon-violet transition-colors"
           >
-            Privara
+            Sepolia Etherscan
           </a>
           <a
             href="https://github.com/FhenixProtocol/awesome-fhenix"

@@ -39,7 +39,17 @@ export const HIRESHIELD_ABI = [
         components: IN_ENCRYPTED_TUPLE_COMPONENTS,
       },
       {
-        name: "_requirementsHash",
+        name: "_experienceRequired",
+        type: "tuple",
+        components: IN_ENCRYPTED_TUPLE_COMPONENTS,
+      },
+      {
+        name: "_skillScore",
+        type: "tuple",
+        components: IN_ENCRYPTED_TUPLE_COMPONENTS,
+      },
+      {
+        name: "_locationPref",
         type: "tuple",
         components: IN_ENCRYPTED_TUPLE_COMPONENTS,
       },
@@ -60,7 +70,17 @@ export const HIRESHIELD_ABI = [
         components: IN_ENCRYPTED_TUPLE_COMPONENTS,
       },
       {
-        name: "_credentialsHash",
+        name: "_experienceYears",
+        type: "tuple",
+        components: IN_ENCRYPTED_TUPLE_COMPONENTS,
+      },
+      {
+        name: "_skillScore",
+        type: "tuple",
+        components: IN_ENCRYPTED_TUPLE_COMPONENTS,
+      },
+      {
+        name: "_locationPref",
         type: "tuple",
         components: IN_ENCRYPTED_TUPLE_COMPONENTS,
       },
@@ -68,6 +88,23 @@ export const HIRESHIELD_ABI = [
     name: "applyToJob",
     outputs: [{ name: "applicationId", type: "uint256" }],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "_jobId", type: "uint256" },
+      { name: "_applicationId", type: "uint256" },
+    ],
+    name: "checkQualification",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "_applicationId", type: "uint256" }],
+    name: "getQualificationResult",
+    outputs: [{ name: "", type: "bytes32" }],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -104,13 +141,6 @@ export const HIRESHIELD_ABI = [
   {
     inputs: [{ name: "_jobId", type: "uint256" }],
     name: "getJobBudgetHandle",
-    outputs: [{ name: "", type: "bytes32" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ name: "_applicationId", type: "uint256" }],
-    name: "getMyExpectedSalaryHandle",
     outputs: [{ name: "", type: "bytes32" }],
     stateMutability: "view",
     type: "function",
@@ -170,7 +200,11 @@ export const HIRESHIELD_ABI = [
     outputs: [
       { name: "candidate", type: "address" },
       { name: "expectedSalaryEncrypted", type: "bytes32" },
-      { name: "credentialsHash", type: "bytes32" },
+      { name: "experienceYears", type: "bytes32" },
+      { name: "skillScore", type: "bytes32" },
+      { name: "locationPref", type: "bytes32" },
+      { name: "qualificationResult", type: "bytes32" },
+      { name: "qualificationChecked", type: "bool" },
       { name: "isMatched", type: "bool" },
       { name: "jobId", type: "uint256" },
     ],
@@ -183,7 +217,9 @@ export const HIRESHIELD_ABI = [
     outputs: [
       { name: "employer", type: "address" },
       { name: "budgetEncrypted", type: "bytes32" },
-      { name: "requirementsHash", type: "bytes32" },
+      { name: "experienceRequired", type: "bytes32" },
+      { name: "skillScore", type: "bytes32" },
+      { name: "locationPref", type: "bytes32" },
       { name: "isActive", type: "bool" },
       { name: "escrowAmount", type: "uint256" },
       { name: "applicationCount", type: "uint256" },
@@ -218,6 +254,16 @@ export const HIRESHIELD_ABI = [
     inputs: [
       { indexed: true, name: "jobId", type: "uint256" },
       { indexed: true, name: "applicationId", type: "uint256" },
+      { indexed: true, name: "candidate", type: "address" },
+    ],
+    name: "QualificationChecked",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "jobId", type: "uint256" },
+      { indexed: true, name: "applicationId", type: "uint256" },
     ],
     name: "MatchFound",
     type: "event",
@@ -231,16 +277,30 @@ export const HIRESHIELD_ABI = [
     name: "EscrowFunded",
     type: "event",
   },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, name: "jobId", type: "uint256" },
+      { indexed: true, name: "candidate", type: "address" },
+      { indexed: false, name: "amount", type: "uint256" },
+    ],
+    name: "BonusAutoReleased",
+    type: "event",
+  },
 ] as const;
 
 export const ESCROW_ABI = [
   {
-    inputs: [
-      { name: "_hireshield", type: "address" },
-      { name: "_privara", type: "address" },
-    ],
+    inputs: [{ name: "_hireshield", type: "address" }],
     stateMutability: "nonpayable",
     type: "constructor",
+  },
+  {
+    inputs: [{ name: "_hireshield", type: "address" }],
+    name: "setHireShieldContract",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
     inputs: [
@@ -269,6 +329,20 @@ export const ESCROW_ABI = [
   {
     inputs: [{ name: "", type: "uint256" }],
     name: "jobEscrowRecipient",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "hireshieldContract",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "owner",
     outputs: [{ name: "", type: "address" }],
     stateMutability: "view",
     type: "function",

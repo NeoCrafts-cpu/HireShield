@@ -1,9 +1,9 @@
-# HireShield — Privacy-First On-Chain Hiring
+# HireShield ï¿½ Privacy-First On-Chain Hiring
 
 > **Salary numbers never leave the browser unencrypted.**
-> HireShield uses Fhenix **Fully Homomorphic Encryption (FHE)** to match employers and candidates on-chain without either party revealing their numbers — not to each other, not to the blockchain, not to anyone.
+> HireShield uses Fhenix **Fully Homomorphic Encryption (FHE)** to match employers and candidates on-chain without either party revealing their numbers ï¿½ not to each other, not to the blockchain, not to anyone.
 
-Live demo · [Sepolia testnet](https://eth-sepolia.g.alchemy.com) · [Fhenix CoFHE](https://docs.fhenix.zone)
+Live demo ï¿½ [Sepolia testnet](https://eth-sepolia.g.alchemy.com) ï¿½ [Fhenix CoFHE](https://docs.fhenix.zone)
 
 ---
 
@@ -29,22 +29,22 @@ HireShield flips this:
 
 ```
 +-----------------------------------------------------------------+
-¦  React 18 + Wagmi v2 + RainbowKit + Framer Motion              ¦
-¦  Dark glassmorphism UI  ·  Neon accent palette (cyan/violet/green) ¦
-+-----------------------------------------------------------------¦
-¦                    @cofhe/react  ·  @cofhe/sdk                  ¦
-¦            Client-side FHE encryption (WASM, no worker)         ¦
-¦            ZK proof generated on main-thread via CoFHE WASM     ¦
-¦            Proof verified by https://testnet-cofhe-vrf.fhenix.zone ¦
-+-----------------------------------------------------------------¦
-¦  HireShield.sol      ¦  HireShieldEscrow.sol                    ¦
-¦  FHE job matching    ¦  ETH bonus escrow                        ¦
-¦  euint128 / euint32  ¦  fundJobBonus / releaseBonus             ¦
-+-----------------------------------------------------------------¦
-¦         Ethereum Sepolia  (chainId 11155111)                     ¦
-¦   HireShield  0x8176549dfbE797b1C77316BFac18DAFCe42bEb8c        ¦
-¦   Escrow      0x77d6f4B3250Ef6C88EC409d49dcF4e5a4DdF2187        ¦
-¦   TaskManager 0xeA30c4B8b44078Bbf8a6ef5b9f1eC1626C7848D9        ¦
+ï¿½  React 18 + Wagmi v2 + RainbowKit + Framer Motion              ï¿½
+ï¿½  Dark glassmorphism UI  ï¿½  Neon accent palette (cyan/violet/green) ï¿½
++-----------------------------------------------------------------ï¿½
+ï¿½                    @cofhe/react  ï¿½  @cofhe/sdk                  ï¿½
+ï¿½            Client-side FHE encryption (WASM, no worker)         ï¿½
+ï¿½            ZK proof generated on main-thread via CoFHE WASM     ï¿½
+ï¿½            Proof verified by https://testnet-cofhe-vrf.fhenix.zone ï¿½
++-----------------------------------------------------------------ï¿½
+ï¿½  HireShield.sol      ï¿½  HireShieldEscrow.sol                    ï¿½
+ï¿½  FHE job matching    ï¿½  ETH bonus escrow                        ï¿½
+ï¿½  euint128 / euint32  ï¿½  fundJobBonus / releaseBonus             ï¿½
++-----------------------------------------------------------------ï¿½
+ï¿½         Ethereum Sepolia  (chainId 11155111)                     ï¿½
+ï¿½   HireShield  0x8176549dfbE797b1C77316BFac18DAFCe42bEb8c        ï¿½
+ï¿½   Escrow      0x77d6f4B3250Ef6C88EC409d49dcF4e5a4DdF2187        ï¿½
+ï¿½   TaskManager 0xeA30c4B8b44078Bbf8a6ef5b9f1eC1626C7848D9        ï¿½
 +-----------------------------------------------------------------+
 ```
 
@@ -55,12 +55,12 @@ HireShield flips this:
 ### ?? Fully Homomorphic Encryption
 - Salary budgets and expectations are encrypted as **`euint128`** via the Fhenix CoFHE SDK before any on-chain write.
 - Skill/credential hashes are encrypted as **`euint32`**.
-- Smart contract performs `FHE.lte()` arithmetic **directly on ciphertexts** — no plaintext decryption ever occurs mid-computation.
+- Smart contract performs `FHE.lte()` arithmetic **directly on ciphertexts** ï¿½ no plaintext decryption ever occurs mid-computation.
 - ZK proof of valid encryption is generated in-browser via WASM (`cofhejs`) and verified by the CoFHE verifier service before the transaction is submitted.
 
 ### ?? Non-Custodial Escrow
 - Employers fund a per-job ETH bonus into `HireShieldEscrow.sol`.
-- The bonus is released programmatically by the HireShield contract when a match is confirmed — no human intermediary.
+- The bonus is released programmatically by the HireShield contract when a match is confirmed ï¿½ no human intermediary.
 - Employers can reclaim unfunded jobs at any time.
 
 ### ??? Privacy Transparency
@@ -68,7 +68,7 @@ HireShield flips this:
 
 ### ?? My Applications (Live On-Chain)
 - The Candidate Dashboard queries `ApplicationSubmitted` events filtered by the connected address.
-- Application status (`isMatched`) and job titles are batch-fetched via `multicall` — no backend required.
+- Application status (`isMatched`) and job titles are batch-fetched via `multicall` ï¿½ no backend required.
 
 ### ? Employer Dashboard
 - Post jobs with encrypted salary budget + skill requirements.
@@ -81,11 +81,11 @@ HireShield flips this:
 
 | Route | Description |
 |---|---|
-| `/` | Landing — hero FHE flow diagram, stats, how-it-works, CTA |
-| `/employer` | Employer Dashboard — post jobs, view applications, trigger match |
-| `/candidate` | Candidate Dashboard — browse jobs, apply, view My Applications |
-| `/job/:id` | Job Detail — full job info + apply form |
-| `/match/:id` | Match Result — show FHE comparison outcome |
+| `/` | Landing ï¿½ hero FHE flow diagram, stats, how-it-works, CTA |
+| `/employer` | Employer Dashboard ï¿½ post jobs, view applications, trigger match |
+| `/candidate` | Candidate Dashboard ï¿½ browse jobs, apply, view My Applications |
+| `/job/:id` | Job Detail ï¿½ full job info + apply form |
+| `/match/:id` | Match Result ï¿½ show FHE comparison outcome |
 | `/how-it-works` | Step-by-step technical walkthrough |
 | `/privacy` | Privacy model, data visibility table, FHE vs ZK comparison |
 
@@ -148,49 +148,49 @@ function refundEmployer(uint256 jobId) external
 ```
 HireShield/
 +-- contracts/
-¦   +-- HireShield.sol          # Main FHE hiring contract (euint128/euint32/ebool)
-¦   +-- HireShieldEscrow.sol    # ETH escrow for job bonuses
-¦   +-- interfaces/
-¦       +-- IPrivaraEscrow.sol
+ï¿½   +-- HireShield.sol          # Main FHE hiring contract (euint128/euint32/ebool)
+ï¿½   +-- HireShieldEscrow.sol    # ETH escrow for job bonuses
+ï¿½   +-- interfaces/
+ï¿½       +-- IPrivaraEscrow.sol
 +-- scripts/
-¦   +-- deploy.ts               # Hardhat deploy script
-¦   +-- interact.ts             # CLI interaction helpers
+ï¿½   +-- deploy.ts               # Hardhat deploy script
+ï¿½   +-- interact.ts             # CLI interaction helpers
 +-- test/
-¦   +-- HireShield.test.ts      # 12/12 tests passing
-¦   +-- Escrow.test.ts
-¦   +-- E2EFlow.test.ts
+ï¿½   +-- HireShield.test.ts      # 12/12 tests passing
+ï¿½   +-- Escrow.test.ts
+ï¿½   +-- E2EFlow.test.ts
 +-- frontend/
-¦   +-- public/
-¦   ¦   +-- hero.png            # Landing hero background
-¦   ¦   +-- logo.png
-¦   +-- scripts/
-¦   ¦   +-- patch-cofhe.cjs     # Patches @cofhe/react MUI icon stubs
-¦   ¦   +-- patch-workers.cjs  # Disables Web Worker (zkProve ? main thread WASM)
-¦   +-- src/
-¦       +-- components/
-¦       ¦   +-- ui/             # GlassCard, NeonButton, HeroFigure, LoadingDots…
-¦       ¦   +-- layout/         # Navbar, Sidebar, Footer
-¦       ¦   +-- employer/       # PostJobForm, JobCard
-¦       ¦   +-- candidate/      # ApplyForm, MatchCard
-¦       ¦   +-- shared/         # FHEStatusIndicator, EscrowStatus
-¦       +-- hooks/
-¦       ¦   +-- useJobList.ts   # useJobList, useJob, useMyApplications
-¦       ¦   +-- useMatchJob.ts
-¦       ¦   +-- useFHEEncrypt.ts
-¦       +-- lib/
-¦       ¦   +-- constants.ts    # ABI + contract addresses
-¦       ¦   +-- cofhe.ts        # CoFHE SDK config (Sepolia chain)
-¦       ¦   +-- wagmi.ts        # Wagmi + RainbowKit config
-¦       +-- pages/
-¦       ¦   +-- Landing.tsx
-¦       ¦   +-- EmployerDashboard.tsx
-¦       ¦   +-- CandidateDashboard.tsx
-¦       ¦   +-- JobDetail.tsx
-¦       ¦   +-- MatchResult.tsx
-¦       ¦   +-- HowItWorks.tsx
-¦       ¦   +-- Privacy.tsx
-¦       +-- store/
-¦           +-- useAppStore.ts
+ï¿½   +-- public/
+ï¿½   ï¿½   +-- hero.png            # Landing hero background
+ï¿½   ï¿½   +-- logo.png
+ï¿½   +-- scripts/
+ï¿½   ï¿½   +-- patch-cofhe.cjs     # Patches @cofhe/react MUI icon stubs
+ï¿½   ï¿½   +-- patch-workers.cjs  # Disables Web Worker (zkProve ? main thread WASM)
+ï¿½   +-- src/
+ï¿½       +-- components/
+ï¿½       ï¿½   +-- ui/             # GlassCard, NeonButton, HeroFigure, LoadingDotsï¿½
+ï¿½       ï¿½   +-- layout/         # Navbar, Sidebar, Footer
+ï¿½       ï¿½   +-- employer/       # PostJobForm, JobCard
+ï¿½       ï¿½   +-- candidate/      # ApplyForm, MatchCard
+ï¿½       ï¿½   +-- shared/         # FHEStatusIndicator, EscrowStatus
+ï¿½       +-- hooks/
+ï¿½       ï¿½   +-- useJobList.ts   # useJobList, useJob, useMyApplications
+ï¿½       ï¿½   +-- useMatchJob.ts
+ï¿½       ï¿½   +-- useFHEEncrypt.ts
+ï¿½       +-- lib/
+ï¿½       ï¿½   +-- constants.ts    # ABI + contract addresses
+ï¿½       ï¿½   +-- cofhe.ts        # CoFHE SDK config (Sepolia chain)
+ï¿½       ï¿½   +-- wagmi.ts        # Wagmi + RainbowKit config
+ï¿½       +-- pages/
+ï¿½       ï¿½   +-- Landing.tsx
+ï¿½       ï¿½   +-- EmployerDashboard.tsx
+ï¿½       ï¿½   +-- CandidateDashboard.tsx
+ï¿½       ï¿½   +-- JobDetail.tsx
+ï¿½       ï¿½   +-- MatchResult.tsx
+ï¿½       ï¿½   +-- HowItWorks.tsx
+ï¿½       ï¿½   +-- Privacy.tsx
+ï¿½       +-- store/
+ï¿½           +-- useAppStore.ts
 +-- vercel.json                 # Vercel SPA routing + COOP/COEP headers
 +-- hardhat.config.ts
 +-- package.json
@@ -232,7 +232,7 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173)
 
-> **Note:** The dev server sets `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` headers — required for the CoFHE WASM module.
+> **Note:** The dev server sets `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` headers ï¿½ required for the CoFHE WASM module.
 
 ---
 
@@ -290,7 +290,7 @@ VITE_PRIVARA_API_KEY=
 ## Known Quirks & Patches
 
 ### `patch-workers.cjs`
-The `@cofhe/sdk` package conditionally spawns a `zkProve.worker.js` Web Worker for ZK proof generation. This file is not emitted into Vite's dep cache, causing a silent worker crash and invalid proof signatures. The patch overrides `areWorkersAvailable()` to return `false`, forcing WASM-based main-thread ZK proving — which is fully supported by the CoFHE SDK fallback path.
+The `@cofhe/sdk` package conditionally spawns a `zkProve.worker.js` Web Worker for ZK proof generation. This file is not emitted into Vite's dep cache, causing a silent worker crash and invalid proof signatures. The patch overrides `areWorkersAvailable()` to return `false`, forcing WASM-based main-thread ZK proving ï¿½ which is fully supported by the CoFHE SDK fallback path.
 
 ### `patch-cofhe.cjs`
 `@cofhe/react` imports from `@mui/icons-material` which is not installed as a peer dependency. The patch injects `null` component stubs before the import so the build succeeds without pulling in the full MUI icons package.
@@ -300,9 +300,9 @@ The `@cofhe/sdk` package conditionally spawns a `zkProve.worker.js` Web Worker f
 ## Design System
 
 - **Background:** `#0a0a0f` dark base, glassmorphism panels with `backdrop-blur`
-- **Accents:** Cyan `#00d4ff` · Violet `#7c3aed` · Green `#00ff88`
+- **Accents:** Cyan `#00d4ff` ï¿½ Violet `#7c3aed` ï¿½ Green `#00ff88`
 - **Typography:** Inter (body) + Space Grotesk (headings)
-- **Animations:** Framer Motion — page transitions, FHE flow diagram (animated SVG packets), aurora gradients, floating pill labels
+- **Animations:** Framer Motion ï¿½ page transitions, FHE flow diagram (animated SVG packets), aurora gradients, floating pill labels
 - **Hero Figure:** Interactive FHE flow diagram showing Employer ? FHE Contract ? Candidate ? Match Result with live animated encrypted data packets
 
 ---

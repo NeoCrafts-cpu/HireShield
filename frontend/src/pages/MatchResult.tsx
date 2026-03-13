@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useMatchJob } from "../hooks/useMatchJob";
 import { useJob } from "../hooks/useJobList";
+import { useEscrow } from "../hooks/useEscrow";
 import { GlassCard } from "../components/ui/GlassCard";
 import { NeonButton } from "../components/ui/NeonButton";
 import { EncryptedBadge } from "../components/ui/EncryptedBadge";
@@ -29,10 +30,15 @@ export function MatchResult() {
   const { matchResult, isLoading } = useMatchJob(applicationId);
   const jobId = matchResult?.jobId ? Number(matchResult.jobId) : undefined;
   const { job } = useJob(jobId);
+  const { claimBonus, isClaiming, escrowAmount } = useEscrow(jobId);
 
-  const handleAccept = () => {
-    // TODO: integrate Privara SDK for confidential bonus payout
-    toast.success("Match accepted! Bonus payout initiated via Privara 🎉");
+  const handleAccept = async () => {
+    if (!jobId) return;
+    try {
+      await claimBonus(jobId);
+    } catch {
+      // toast already shown by hook
+    }
   };
 
   const handleDecline = () => {
@@ -196,7 +202,7 @@ export function MatchResult() {
                     </span>
                   </div>
                   <span className="text-neon-green font-mono font-bold">
-                    via Privara
+                    On-Chain Escrow
                   </span>
                 </motion.div>
               )}
@@ -214,6 +220,7 @@ export function MatchResult() {
                   variant="primary"
                   size="lg"
                   onClick={handleAccept}
+                  loading={isClaiming}
                   icon={<CheckCircle className="w-5 h-5" />}
                   className="flex-1 justify-center"
                 >

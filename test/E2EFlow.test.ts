@@ -7,15 +7,34 @@ async function getClient(signer?: any) {
   return hre.cofhe.createClientWithBatteries(signer);
 }
 
+// Helper: encrypt 4D job requirements
+async function encryptJobReqs(client: any, budget: bigint, exp: bigint, skills: bigint, loc: bigint) {
+  return client.encryptInputs([
+    Encryptable.uint128(budget),
+    Encryptable.uint32(exp),
+    Encryptable.uint32(skills),
+    Encryptable.uint32(loc),
+  ]).execute();
+}
+
+// Helper: encrypt 4D candidate credentials
+async function encryptCandidateCreds(client: any, salary: bigint, exp: bigint, skills: bigint, loc: bigint) {
+  return client.encryptInputs([
+    Encryptable.uint128(salary),
+    Encryptable.uint32(exp),
+    Encryptable.uint32(skills),
+    Encryptable.uint32(loc),
+  ]).execute();
+}
+
 describe("E2E: Full Hiring Flow", function () {
-  it("employer posts → candidate applies → cofhe matches → escrow releases", async function () {
+  it("employer posts → candidate applies → qualification check → match → escrow auto-releases", async function () {
     const [employer, candidate, cofheNode] = await ethers.getSigners();
     const employerClient = await getClient(employer);
     const candidateClient = await getClient(candidate);
 
     // --- Deploy contracts ---
     const Escrow = await ethers.deployContract("HireShieldEscrow", [
-      ethers.ZeroAddress, // placeholder, updated below
       ethers.ZeroAddress,
     ]);
     const escrowAddr = await Escrow.getAddress();
@@ -26,19 +45,18 @@ describe("E2E: Full Hiring Flow", function () {
     ]);
     const hireShieldAddr = await HireShield.getAddress();
 
-    // --- Step 1: Employer posts a job with encrypted budget + escrow bonus ---
+    // Link escrow to HireShield
+    await Escrow.setHireShieldContract(hireShieldAddr);
+
+    // --- Step 1: Employer posts a job with 4D encrypted requirements + escrow bonus ---
     const bonusAmount = ethers.parseEther("1.0");
 
-    const [encBudget, encSkills] = await employerClient
-      .encryptInputs([
-        Encryptable.uint128(150000n), // $150k budget
-        Encryptable.uint32(0xdeadbeefn), // skills hash
-      ])
-      .execute();
+    const [encBudget, encExpReq, encSkillReq, encLocReq] = await encryptJobReqs(
+      employerClient, 150000n, 3n, 70n, 1n
+    );
 
     const postTx = await HireShield.connect(employer).postJob(
-      encBudget,
-      encSkills,
+      encBudget, encExpReq, encSkillReq, encLocReq,
       "Lead Solidity Engineer",
       "Build privacy-first dApps with FHE",
       { value: bonusAmount }
@@ -53,7 +71,6 @@ describe("E2E: Full Hiring Flow", function () {
     expect(job.title).to.equal("Lead Solidity Engineer");
     expect(job.applicationCount).to.equal(0n);
 
-    // Verify event emitted
     await expect(postTx)
       .to.emit(HireShield, "JobPosted")
       .withArgs(1n, employer.address, "Lead Solidity Engineer");
@@ -61,95 +78,64 @@ describe("E2E: Full Hiring Flow", function () {
       .to.emit(HireShield, "EscrowFunded")
       .withArgs(1n, bonusAmount);
 
-    // --- Step 2: Candidate applies with encrypted salary expectation ---
-    const [encSalary, encCreds] = await candidateClient
-      .encryptInputs([
-        Encryptable.uint128(140000n), // $140k expected (within budget)
-        Encryptable.uint32(0xcafe1234n), // credentials hash
-      ])
-      .execute();
+    // --- Step 2: Candidate applies with 4D encrypted credentials ---
+    const [encSalary, encExp, encSkills, encLoc] = await encryptCandidateCreds(
+      candidateClient, 140000n, 5n, 85n, 1n
+    );
 
     const applyTx = await HireShield.connect(candidate).applyToJob(
-      1,
-      encSalary,
-      encCreds
+      1, encSalary, encExp, encSkills, encLoc
     );
     await applyTx.wait();
 
-    // Verify application recorded
     const appIds = await HireShield.getJobApplicationIds(1);
     expect(appIds.length).to.equal(1);
     expect(appIds[0]).to.equal(1n);
 
-    const updatedJob = await HireShield.getJob(1);
-    expect(updatedJob.applicationCount).to.equal(1n);
-
-    // Verify event
     await expect(applyTx)
       .to.emit(HireShield, "ApplicationSubmitted")
       .withArgs(1n, 1n, candidate.address);
 
-    // --- Step 3: CoFHE node signals a match ---
+    // --- Step 3: Candidate checks qualification (4D FHE comparison) ---
+    const checkTx = await HireShield.connect(candidate).checkQualification(1, 1);
+    await checkTx.wait();
+
+    await expect(checkTx)
+      .to.emit(HireShield, "QualificationChecked")
+      .withArgs(1n, 1n, candidate.address);
+
+    const appAfterCheck = await HireShield.applications(1);
+    expect(appAfterCheck.qualificationChecked).to.be.true;
+
+    // --- Step 4: CoFHE node confirms match → escrow auto-releases ---
     const matchTx = await HireShield.connect(cofheNode).setMatchResult(1, 1);
     await matchTx.wait();
 
-    // Verify match state
-    const app = await HireShield.applications(1);
-    expect(app.isMatched).to.be.true;
+    const appAfterMatch = await HireShield.applications(1);
+    expect(appAfterMatch.isMatched).to.be.true;
 
     const closedJob = await HireShield.getJob(1);
     expect(closedJob.isActive).to.be.false;
+    // Escrow amount should be zero (auto-transferred to escrow contract)
+    expect(closedJob.escrowAmount).to.equal(0n);
 
+    await expect(matchTx).to.emit(HireShield, "MatchFound").withArgs(1n, 1n);
     await expect(matchTx)
-      .to.emit(HireShield, "MatchFound")
-      .withArgs(1n, 1n);
+      .to.emit(HireShield, "BonusAutoReleased")
+      .withArgs(1n, candidate.address, bonusAmount);
 
-    // --- Step 4: Fund escrow bonus for the candidate ---
-    const fundTx = await Escrow.connect(employer).fundJobBonus(
-      1,
-      candidate.address,
-      { value: bonusAmount }
-    );
-    await fundTx.wait();
-
+    // Verify escrow received the bonus
     expect(await Escrow.jobEscrowAmount(1)).to.equal(bonusAmount);
     expect(await Escrow.jobEscrowRecipient(1)).to.equal(candidate.address);
 
-    // --- Step 5: Release escrow bonus via HireShield.claimBonus ---
-    // Update Escrow to point to HireShield so releaseBonus access check passes
-    const Escrow2 = await ethers.deployContract("HireShieldEscrow", [
-      hireShieldAddr,
-      ethers.ZeroAddress,
-    ]);
-    const escrow2Addr = await Escrow2.getAddress();
+    // --- Step 5: Candidate claims bonus from escrow ---
+    const candidateBalBefore = await ethers.provider.getBalance(candidate.address);
+    await Escrow.connect(candidate).releaseBonus(1);
+    const candidateBalAfter = await ethers.provider.getBalance(candidate.address);
 
-    // Re-deploy HireShield pointing at Escrow2
-    const HireShield2 = await ethers.deployContract("HireShield", [
-      escrow2Addr,
-      cofheNode.address,
-    ]);
-    const hireShield2Addr = await HireShield2.getAddress();
-
-    // Fund escrow2
-    await Escrow2.connect(employer).fundJobBonus(1, candidate.address, {
-      value: bonusAmount,
-    });
-
-    const candidateBalBefore = await ethers.provider.getBalance(
-      candidate.address
-    );
-
-    // Release bonus via claimBonus — callable by employer or matched candidate
-    // (job 1 was matched in HireShield2? No, we need a fresh flow. Test candidate directly on Escrow2.)
-    // Candidate is the recipient, so they can call releaseBonus directly on Escrow2
-    await Escrow2.connect(candidate).releaseBonus(1);
-
-    const candidateBalAfter = await ethers.provider.getBalance(
-      candidate.address
-    );
     expect(candidateBalAfter - candidateBalBefore).to.be.closeTo(
       bonusAmount,
-      ethers.parseEther("0.01") // allow gas tolerance
+      ethers.parseEther("0.01")
     );
   });
 
@@ -162,49 +148,39 @@ describe("E2E: Full Hiring Flow", function () {
 
     const Escrow = await ethers.deployContract("HireShieldEscrow", [
       ethers.ZeroAddress,
-      ethers.ZeroAddress,
     ]);
     const HireShield = await ethers.deployContract("HireShield", [
       await Escrow.getAddress(),
       cofheNode.address,
     ]);
 
-    // Employer posts
-    const [encBudget, encSkills] = await employerClient
-      .encryptInputs([
-        Encryptable.uint128(100000n),
-        Encryptable.uint32(0x1111n),
-      ])
-      .execute();
+    const [encBudget, encExp, encSkills, encLoc] = await encryptJobReqs(
+      employerClient, 100000n, 1n, 50n, 2n
+    );
     await HireShield.connect(employer).postJob(
-      encBudget,
-      encSkills,
-      "Junior Dev",
-      "Entry level"
+      encBudget, encExp, encSkills, encLoc,
+      "Junior Dev", "Entry level"
     );
 
-    // Candidate 1 applies
-    const [encSal1, encCred1] = await c1Client
-      .encryptInputs([
-        Encryptable.uint128(80000n),
-        Encryptable.uint32(0x2222n),
-      ])
-      .execute();
-    await HireShield.connect(candidate1).applyToJob(1, encSal1, encCred1);
+    const [encSal1, encExp1, encSk1, encLoc1] = await encryptCandidateCreds(
+      c1Client, 80000n, 2n, 60n, 2n
+    );
+    await HireShield.connect(candidate1).applyToJob(
+      1, encSal1, encExp1, encSk1, encLoc1
+    );
 
-    // CoFHE matches candidate 1 → job becomes inactive
+    // Match candidate 1 → job becomes inactive
     await HireShield.connect(cofheNode).setMatchResult(1, 1);
 
     // Candidate 2 tries to apply — should fail
-    const [encSal2, encCred2] = await c2Client
-      .encryptInputs([
-        Encryptable.uint128(75000n),
-        Encryptable.uint32(0x3333n),
-      ])
-      .execute();
+    const [encSal2, encExp2, encSk2, encLoc2] = await encryptCandidateCreds(
+      c2Client, 75000n, 3n, 65n, 2n
+    );
 
     await expect(
-      HireShield.connect(candidate2).applyToJob(1, encSal2, encCred2)
+      HireShield.connect(candidate2).applyToJob(
+        1, encSal2, encExp2, encSk2, encLoc2
+      )
     ).to.be.revertedWith("HireShield: Job not active");
   });
 
@@ -216,34 +192,26 @@ describe("E2E: Full Hiring Flow", function () {
 
     const Escrow = await ethers.deployContract("HireShieldEscrow", [
       ethers.ZeroAddress,
-      ethers.ZeroAddress,
     ]);
     const HireShield = await ethers.deployContract("HireShield", [
       await Escrow.getAddress(),
       cofheNode.address,
     ]);
 
-    // Post + apply
-    const [encBudget, encSkills] = await employerClient
-      .encryptInputs([
-        Encryptable.uint128(100000n),
-        Encryptable.uint32(0xaaaan),
-      ])
-      .execute();
+    const [encBudget, encExp, encSkills, encLoc] = await encryptJobReqs(
+      employerClient, 100000n, 2n, 60n, 3n
+    );
     await HireShield.connect(employer).postJob(
-      encBudget,
-      encSkills,
-      "Test Job",
-      "Testing"
+      encBudget, encExp, encSkills, encLoc,
+      "Test Job", "Testing"
     );
 
-    const [encSal, encCred] = await candidateClient
-      .encryptInputs([
-        Encryptable.uint128(90000n),
-        Encryptable.uint32(0xbbbbn),
-      ])
-      .execute();
-    await HireShield.connect(candidate).applyToJob(1, encSal, encCred);
+    const [encSal, encExpC, encSkC, encLocC] = await encryptCandidateCreds(
+      candidateClient, 90000n, 4n, 80n, 3n
+    );
+    await HireShield.connect(candidate).applyToJob(
+      1, encSal, encExpC, encSkC, encLocC
+    );
 
     // Attacker tries to set match — should fail
     await expect(
@@ -262,37 +230,29 @@ describe("E2E: Full Hiring Flow", function () {
 
     const Escrow = await ethers.deployContract("HireShieldEscrow", [
       ethers.ZeroAddress,
-      ethers.ZeroAddress,
     ]);
     const HireShield = await ethers.deployContract("HireShield", [
       await Escrow.getAddress(),
       cofheNode.address,
     ]);
 
-    // Post job
-    const [encBudget, encSkills] = await employerClient
-      .encryptInputs([
-        Encryptable.uint128(200000n),
-        Encryptable.uint32(0xffn),
-      ])
-      .execute();
+    const [encBudget, encExp, encSkills, encLoc] = await encryptJobReqs(
+      employerClient, 200000n, 5n, 90n, 1n
+    );
     await HireShield.connect(employer).postJob(
-      encBudget,
-      encSkills,
-      "Staff Engineer",
-      "Lead the team"
+      encBudget, encExp, encSkills, encLoc,
+      "Staff Engineer", "Lead the team"
     );
 
     // Three candidates apply
     for (const candidate of [c1, c2, c3]) {
       const client = await getClient(candidate);
-      const [encSal, encCred] = await client
-        .encryptInputs([
-          Encryptable.uint128(180000n),
-          Encryptable.uint32(0xeen),
-        ])
-        .execute();
-      await HireShield.connect(candidate).applyToJob(1, encSal, encCred);
+      const [encSal, encExpC, encSkC, encLocC] = await encryptCandidateCreds(
+        client, 180000n, 7n, 95n, 1n
+      );
+      await HireShield.connect(candidate).applyToJob(
+        1, encSal, encExpC, encSkC, encLocC
+      );
     }
 
     const job = await HireShield.getJob(1);

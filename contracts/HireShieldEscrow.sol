@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import "./interfaces/IPrivaraEscrow.sol";
-
 /**
  * @title HireShieldEscrow
- * @notice Escrow contract for signing bonuses, integrated with Privara confidential payments
- * @dev Holds ETH bonuses and releases them to matched candidates
+ * @notice Signing bonus escrow — bonuses are auto-locked when jobs are posted and
+ *         auto-released to matched candidates when the CoFHE network confirms a match.
+ * @dev HireShield contract transfers ETH here on match confirmation. Candidate claims.
  */
 contract HireShieldEscrow {
     address public hireshieldContract;
-    address public privaraEscrow; // Privara contract address on Sepolia
+    address public owner;
 
     mapping(uint256 => address) public jobEscrowRecipient;
     mapping(uint256 => uint256) public jobEscrowAmount;
@@ -18,15 +17,22 @@ contract HireShieldEscrow {
     event BonusReleased(uint256 indexed jobId, address indexed candidate, uint256 amount);
     event BonusFunded(uint256 indexed jobId, address indexed candidate, uint256 amount);
 
-    constructor(address _hireshield, address _privara) {
+    constructor(address _hireshield) {
+        owner = msg.sender;
         hireshieldContract = _hireshield;
-        privaraEscrow = _privara;
     }
 
-    /// @notice Fund a signing bonus for a matched candidate
+    /// @notice Update the HireShield contract address (for post-deployment linking)
+    function setHireShieldContract(address _hireshield) external {
+        require(msg.sender == owner, "Only owner");
+        hireshieldContract = _hireshield;
+    }
+
+    /// @notice Fund a signing bonus — only callable by HireShield on match confirmation
     /// @param jobId The job ID
     /// @param candidate The candidate address to receive the bonus
     function fundJobBonus(uint256 jobId, address candidate) external payable {
+        require(msg.sender == hireshieldContract, "Only HireShield");
         require(msg.value > 0, "Must send ETH");
         jobEscrowRecipient[jobId] = candidate;
         jobEscrowAmount[jobId] = msg.value;
@@ -47,8 +53,6 @@ contract HireShieldEscrow {
 
         jobEscrowAmount[jobId] = 0;
 
-        // TODO: integrate Privara SDK for confidential transfer via IPrivaraEscrow
-        // For now, direct ETH transfer as fallback
         (bool success, ) = payable(candidate).call{value: amount}("");
         require(success, "Transfer failed");
 

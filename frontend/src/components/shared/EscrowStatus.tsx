@@ -20,7 +20,7 @@ export function EscrowStatus({ jobId, amount, status, recipient }: EscrowStatusP
             <Coins className="w-4 h-4 text-neon-violet" />
           </div>
           <div>
-            <p className="text-white text-sm font-semibold">Privara Escrow</p>
+            <p className="text-white text-sm font-semibold">Signing Bonus Escrow</p>
             <p className="text-[rgba(255,255,255,0.3)] text-xs">Job #{jobId}</p>
           </div>
         </div>
@@ -46,8 +46,8 @@ export function EscrowStatus({ jobId, amount, status, recipient }: EscrowStatusP
           <span className="text-[rgba(255,255,255,0.4)]">Privacy</span>
           <div className="flex items-center gap-1 text-neon-violet text-xs">
             <Shield className="w-3 h-3" />
-            {/* TODO: integrate Privara SDK for confidential status */}
-            Confidential via Privara
+            {/* On-chain escrow via HireShieldEscrow contract */}
+            Secured On-Chain
           </div>
         </div>
       </div>

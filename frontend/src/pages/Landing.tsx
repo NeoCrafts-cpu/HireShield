@@ -22,47 +22,47 @@ const HOW_IT_WORKS = [
   {
     step: "01",
     icon: Lock,
-    title: "Employer Encrypts Budget",
+    title: "Encrypt Everything",
     description:
-      "Salary budgets are encrypted client-side via Fhenix CoFHE before touching any chain.",
+      "Salary, experience, skills, and location are encrypted client-side via Fhenix CoFHE. Nothing raw ever touches the chain.",
     color: "cyan" as const,
   },
   {
     step: "02",
     icon: Shield,
-    title: "Candidate Applies Privately",
+    title: "Apply Without Exposing",
     description:
-      "Expected salary expectations encrypted with FHE. No raw numbers, ever.",
+      "Candidates submit encrypted credentials. No salary expectation, no skill level — nothing is visible to anyone.",
     color: "violet" as const,
   },
   {
     step: "03",
     icon: Zap,
-    title: "FHE Matching On-Chain",
+    title: "4D FHE Match On-Chain",
     description:
-      "Smart contract computes match on ciphertext. Winner notified, no data revealed.",
+      "Smart contract compares salary, experience, skills, and location — all on ciphertext. Only the boolean result is revealed.",
     color: "green" as const,
   },
 ];
 
 const STATS = [
   {
-    label: "Privacy-First",
+    label: "Encrypted Dimensions",
+    value: 4,
+    suffix: "D",
+    description: "Salary · Experience · Skills · Location",
+  },
+  {
+    label: "Zero Bias",
     value: 100,
     suffix: "%",
-    description: "Encrypted by Default",
+    description: "No name, age, or photo during match",
   },
   {
-    label: "Gas Saved vs ZK",
-    value: 80,
-    suffix: "%",
-    description: "Lighter than ZK circuits",
-  },
-  {
-    label: "Trust Nodes",
+    label: "Threshold Decrypt",
     value: 5,
     suffix: "+",
-    description: "Threshold key shares",
+    description: "CoFHE key shares for decryption",
   },
 ];
 
@@ -124,17 +124,17 @@ export function Landing() {
               className="max-w-[600px]"
             >
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-heading font-black text-white leading-[1.05] mb-4">
-                Hire Privately.
+                End Salary
               </h1>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-heading font-black leading-[1.05] mb-8">
-                <span className="gradient-text">Shield</span>{" "}
-                <span className="text-[rgba(255,255,255,0.18)] font-black">the Numbers.</span>
+                <span className="gradient-text">Discrimination.</span>{" "}
+                <span className="text-[rgba(255,255,255,0.18)] font-black">Forever.</span>
               </h1>
 
               <p className="text-lg text-[rgba(255,255,255,0.55)] max-w-lg mb-10 leading-relaxed">
-                Post budgets and apply for jobs without exposing your{" "}
-                <strong className="text-white">salary expectations</strong> or{" "}
-                <strong className="text-white">hiring budget</strong> to anyone — ever.
+                Companies compete on merit without seeing your{" "}
+                <strong className="text-white">salary history</strong>. Candidates apply without revealing{" "}
+                <strong className="text-white">their number</strong>. FHE matches on encrypted data — no one sees anything.
               </p>
 
               {/* CTAs */}
@@ -164,10 +164,10 @@ export function Landing() {
               {/* Trust badges */}
               <div className="flex items-center gap-6 flex-wrap">
                 {[
-                  { dot: "bg-neon-cyan", label: "100% PRIVATE" },
+                  { dot: "bg-neon-cyan", label: "ZERO BIAS" },
                   { dot: "bg-[#7c3aed]", label: "FHE NATIVE" },
-                  { dot: "bg-neon-green", label: "ON-CHAIN MATCH" },
-                  { dot: "bg-[rgba(255,255,255,0.3)]", label: "NON-CUSTODIAL" },
+                  { dot: "bg-neon-green", label: "4D MATCHING" },
+                  { dot: "bg-[rgba(255,255,255,0.3)]", label: "AUTO ESCROW" },
                 ].map(({ dot, label }) => (
                   <div key={label} className="flex items-center gap-2">
                     <div className={`w-1.5 h-1.5 rounded-full ${dot}`} />
@@ -278,7 +278,7 @@ export function Landing() {
             </h2>
             <p className="text-[rgba(255,255,255,0.5)] mb-8">
               Join the confidential hiring revolution. Powered by Fhenix FHE and
-              Privara rails.
+              on-chain escrow.
             </p>
             <NeonButton
               variant="secondary"
@@ -305,12 +305,12 @@ export function Landing() {
             </a>{" "}
             +{" "}
             <a
-              href="https://reineira.xyz/docs"
+              href="https://sepolia.etherscan.io/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-neon-violet hover:underline"
             >
-              Privara
+              Sepolia
             </a>{" "}
             | HireShield © 2026
           </p>

@@ -6,8 +6,17 @@ import { NeonButton } from "../ui/NeonButton";
 import { EncryptedBadge } from "../ui/EncryptedBadge";
 import { HIRESHIELD_ABI, HIRESHIELD_ADDRESS } from "../../lib/constants";
 import { useFHEEncrypt } from "../../hooks/useFHEEncrypt";
-import { DollarSign, Award, Lock, Send } from "lucide-react";
+import { DollarSign, Award, Lock, Send, MapPin, Clock } from "lucide-react";
 import toast from "react-hot-toast";
+
+const LOCATION_OPTIONS = [
+  { label: "Remote", value: 1 },
+  { label: "North America", value: 2 },
+  { label: "Europe", value: 3 },
+  { label: "Asia Pacific", value: 4 },
+  { label: "Latin America", value: 5 },
+  { label: "Middle East / Africa", value: 6 },
+];
 
 interface ApplyFormProps {
   jobId: number;
@@ -16,30 +25,28 @@ interface ApplyFormProps {
 
 export function ApplyForm({ jobId, jobTitle }: ApplyFormProps) {
   const [expectedSalary, setExpectedSalary] = useState("");
-  const [credentials, setCredentials] = useState("");
+  const [experience, setExperience] = useState("");
+  const [skillScore, setSkillScore] = useState("");
+  const [location, setLocation] = useState("1");
   const [step, setStep] = useState<"form" | "encrypting" | "confirming">("form");
 
   const { encrypt } = useFHEEncrypt();
   const { writeContractAsync, isPending } = useWriteContract();
 
   const handleApply = async () => {
-    if (!expectedSalary) {
-      toast.error("Please enter your expected salary");
+    if (!expectedSalary || !experience || !skillScore) {
+      toast.error("Please fill in all required fields");
       return;
     }
 
     try {
       setStep("encrypting");
 
+      // Encrypt all 4 dimensions via CoFHE SDK
       const encSalary = await encrypt(BigInt(expectedSalary), "euint128");
-      const credBytes = new TextEncoder().encode(credentials);
-      const credHash = BigInt(
-        "0x" +
-          Array.from(credBytes.slice(0, 4))
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join("")
-      );
-      const encCreds = await encrypt(credHash, "euint32");
+      const encExperience = await encrypt(BigInt(experience), "euint32");
+      const encSkills = await encrypt(BigInt(skillScore), "euint32");
+      const encLocation = await encrypt(BigInt(location), "euint32");
 
       setStep("confirming");
 
@@ -47,13 +54,15 @@ export function ApplyForm({ jobId, jobTitle }: ApplyFormProps) {
         address: HIRESHIELD_ADDRESS,
         abi: HIRESHIELD_ABI,
         functionName: "applyToJob",
-        args: [BigInt(jobId), encSalary as any, encCreds as any],
+        args: [BigInt(jobId), encSalary as any, encExperience as any, encSkills as any, encLocation as any],
       });
 
       toast.success("Application submitted confidentially! 🔒");
       setStep("form");
       setExpectedSalary("");
-      setCredentials("");
+      setExperience("");
+      setSkillScore("");
+      setLocation("1");
     } catch (err) {
       console.error(err);
       toast.error("Application failed. Please try again.");
@@ -104,17 +113,61 @@ export function ApplyForm({ jobId, jobTitle }: ApplyFormProps) {
               </p>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[rgba(255,255,255,0.7)] text-sm font-medium mb-2 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-neon-cyan" /> Experience (years)
+                  <span className="text-xs text-neon-cyan bg-[rgba(0,212,255,0.1)] px-2 py-0.5 rounded-full ml-1">
+                    🔒
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  value={experience}
+                  onChange={(e) => setExperience(e.target.value)}
+                  placeholder="5"
+                  min="0"
+                  max="50"
+                  className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white placeholder-[rgba(255,255,255,0.3)] focus:outline-none focus:border-[rgba(0,212,255,0.5)] transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[rgba(255,255,255,0.7)] text-sm font-medium mb-2 flex items-center gap-2">
+                  <Award className="w-4 h-4 text-neon-cyan" /> Skill Level (1-100)
+                  <span className="text-xs text-neon-cyan bg-[rgba(0,212,255,0.1)] px-2 py-0.5 rounded-full ml-1">
+                    🔒
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  value={skillScore}
+                  onChange={(e) => setSkillScore(e.target.value)}
+                  placeholder="85"
+                  min="1"
+                  max="100"
+                  className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white placeholder-[rgba(255,255,255,0.3)] focus:outline-none focus:border-[rgba(0,212,255,0.5)] transition-all"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="text-[rgba(255,255,255,0.7)] text-sm font-medium mb-2 flex items-center gap-2">
-                <Award className="w-4 h-4 text-neon-cyan" /> Credentials /
-                Skills
+                <MapPin className="w-4 h-4 text-neon-green" /> Location
+                <span className="text-xs text-neon-green bg-[rgba(0,255,136,0.1)] px-2 py-0.5 rounded-full ml-1">
+                  🔒 Encrypted
+                </span>
               </label>
-              <input
-                value={credentials}
-                onChange={(e) => setCredentials(e.target.value)}
-                placeholder="Solidity, Auditing, FHE, ZK..."
-                className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white placeholder-[rgba(255,255,255,0.3)] focus:outline-none focus:border-[rgba(0,212,255,0.5)] transition-all"
-              />
+              <select
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[rgba(0,255,136,0.5)] transition-all"
+              >
+                {LOCATION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value} className="bg-[#0a0a0f]">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <NeonButton

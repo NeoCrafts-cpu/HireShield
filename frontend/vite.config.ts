@@ -9,7 +9,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "cofhejs/node": "cofhejs/web",
     },
   },
   define: {
@@ -26,6 +25,6 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ["tfhe", "node-tfhe", "cofhejs"],
+    exclude: ["tfhe", "node-tfhe"],
   },
 });

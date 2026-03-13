@@ -124,7 +124,7 @@ export function useMyApplications() {
         .map((appId, i): ApplicationData => {
           const r = appResults[i];
           const isMatched =
-            r.status === "success" ? Boolean((r.result as any)[3]) : false;
+            r.status === "success" ? Boolean((r.result as any)[7]) : false;
           return {
             applicationId: appId,
             jobId: jobIds[i],

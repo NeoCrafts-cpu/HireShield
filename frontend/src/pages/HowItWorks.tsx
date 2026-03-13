@@ -58,7 +58,7 @@ const FLOW_STEPS = [
     icon: Users,
     title: "Reveal & Payout",
     description:
-      "Only the match boolean is revealed. If matched, the Privara escrow releases the signing bonus via confidential transfer.",
+      "Only the match boolean is revealed. If matched, the on-chain escrow auto-releases the signing bonus to the candidate.",
     detail: "isMatch=true → releaseBonus(candidate)",
     color: "green" as const,
   },
@@ -215,7 +215,7 @@ export function HowItWorks() {
                     </li>
                     <li className="flex items-center gap-2">
                       <Lock className="w-3 h-3 text-neon-green" /> Bonus
-                      amounts (via Privara)
+                      amounts (on-chain escrow)
                     </li>
                   </ul>
                 </div>
@@ -271,8 +271,8 @@ export function HowItWorks() {
                     color: "text-neon-cyan",
                   },
                   {
-                    label: "Privara / Reineira Docs",
-                    url: "https://reineira.xyz/docs",
+                    label: "Sepolia Etherscan",
+                    url: "https://sepolia.etherscan.io/",
                     color: "text-neon-violet",
                   },
                   {

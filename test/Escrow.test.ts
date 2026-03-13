@@ -2,12 +2,11 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 describe("HireShieldEscrow", function () {
-  it("Should accept bonus funding", async function () {
+  it("Should accept bonus funding from HireShield contract", async function () {
     const [deployer, candidate] = await ethers.getSigners();
 
     const Escrow = await ethers.deployContract("HireShieldEscrow", [
       deployer.address, // hireshieldContract = deployer for testing
-      ethers.ZeroAddress,
     ]);
 
     const bonusAmount = ethers.parseEther("1.0");
@@ -25,8 +24,7 @@ describe("HireShieldEscrow", function () {
     const [deployer, candidate] = await ethers.getSigners();
 
     const Escrow = await ethers.deployContract("HireShieldEscrow", [
-      deployer.address, // hireshieldContract = deployer for testing
-      ethers.ZeroAddress,
+      deployer.address,
     ]);
 
     const bonusAmount = ethers.parseEther("1.0");
@@ -46,12 +44,25 @@ describe("HireShieldEscrow", function () {
     console.log("✅ Bonus released to candidate");
   });
 
-  it("Should reject release from non-HireShield caller", async function () {
+  it("Should reject funding from non-HireShield caller", async function () {
     const [deployer, attacker, candidate] = await ethers.getSigners();
 
     const Escrow = await ethers.deployContract("HireShieldEscrow", [
       deployer.address,
-      ethers.ZeroAddress,
+    ]);
+
+    await expect(
+      Escrow.connect(attacker).fundJobBonus(1, candidate.address, {
+        value: ethers.parseEther("1.0"),
+      })
+    ).to.be.revertedWith("Only HireShield");
+  });
+
+  it("Should reject release from non-authorized caller", async function () {
+    const [deployer, attacker, candidate] = await ethers.getSigners();
+
+    const Escrow = await ethers.deployContract("HireShieldEscrow", [
+      deployer.address,
     ]);
 
     await Escrow.fundJobBonus(1, candidate.address, {
@@ -68,9 +79,19 @@ describe("HireShieldEscrow", function () {
 
     const Escrow = await ethers.deployContract("HireShieldEscrow", [
       deployer.address,
-      ethers.ZeroAddress,
     ]);
 
     await expect(Escrow.releaseBonus(1)).to.be.revertedWith("No bonus");
+  });
+
+  it("Should allow setHireShieldContract by owner", async function () {
+    const [deployer, newHireShield] = await ethers.getSigners();
+
+    const Escrow = await ethers.deployContract("HireShieldEscrow", [
+      ethers.ZeroAddress,
+    ]);
+
+    await Escrow.setHireShieldContract(newHireShield.address);
+    expect(await Escrow.hireshieldContract()).to.equal(newHireShield.address);
   });
 });

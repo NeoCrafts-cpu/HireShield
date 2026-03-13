@@ -7,14 +7,25 @@ import { NeonButton } from "../ui/NeonButton";
 import { EncryptedBadge } from "../ui/EncryptedBadge";
 import { HIRESHIELD_ABI, HIRESHIELD_ADDRESS } from "../../lib/constants";
 import { useFHEEncrypt } from "../../hooks/useFHEEncrypt";
-import { Briefcase, DollarSign, Code, Lock } from "lucide-react";
+import { Briefcase, DollarSign, Code, Lock, MapPin, Clock } from "lucide-react";
 import toast from "react-hot-toast";
+
+const LOCATION_OPTIONS = [
+  { label: "Remote", value: 1 },
+  { label: "North America", value: 2 },
+  { label: "Europe", value: 3 },
+  { label: "Asia Pacific", value: 4 },
+  { label: "Latin America", value: 5 },
+  { label: "Middle East / Africa", value: 6 },
+];
 
 export function PostJobForm() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [budget, setBudget] = useState("");
-  const [skills, setSkills] = useState("");
+  const [experience, setExperience] = useState("");
+  const [skillScore, setSkillScore] = useState("");
+  const [location, setLocation] = useState("1");
   const [escrowBonus, setEscrowBonus] = useState("0");
   const [step, setStep] = useState<"form" | "encrypting" | "confirming">("form");
 
@@ -22,7 +33,7 @@ export function PostJobForm() {
   const { writeContractAsync, isPending } = useWriteContract();
 
   const handleSubmit = async () => {
-    if (!title || !budget) {
+    if (!title || !budget || !experience || !skillScore) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -35,16 +46,11 @@ export function PostJobForm() {
     try {
       setStep("encrypting");
 
-      // Encrypt budget and skills hash via CoFHE SDK
+      // Encrypt all 4 dimensions via CoFHE SDK
       const encBudget = await encrypt(BigInt(budget), "euint128");
-      const skillsBytes = new TextEncoder().encode(skills);
-      const skillsHash = BigInt(
-        "0x" +
-          Array.from(skillsBytes.slice(0, 4))
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join("")
-      );
-      const encSkills = await encrypt(skillsHash, "euint32");
+      const encExperience = await encrypt(BigInt(experience), "euint32");
+      const encSkills = await encrypt(BigInt(skillScore), "euint32");
+      const encLocation = await encrypt(BigInt(location), "euint32");
 
       setStep("confirming");
 
@@ -52,7 +58,7 @@ export function PostJobForm() {
         address: HIRESHIELD_ADDRESS,
         abi: HIRESHIELD_ABI,
         functionName: "postJob",
-        args: [encBudget as any, encSkills as any, title, description],
+        args: [encBudget as any, encExperience as any, encSkills as any, encLocation as any, title, description],
         value: parseEther(escrowBonus || "0"),
       });
 
@@ -61,7 +67,9 @@ export function PostJobForm() {
       setTitle("");
       setDescription("");
       setBudget("");
-      setSkills("");
+      setExperience("");
+      setSkillScore("");
+      setLocation("1");
       setEscrowBonus("0");
     } catch (err) {
       console.error(err);
@@ -127,17 +135,63 @@ export function PostJobForm() {
               </p>
             </div>
 
-            {/* Skills */}
+            {/* Experience Required */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[rgba(255,255,255,0.7)] text-sm font-medium mb-2 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-neon-violet" /> Min Experience (years)
+                  <span className="text-xs text-neon-violet bg-[rgba(124,58,237,0.1)] px-2 py-0.5 rounded-full ml-1">
+                    🔒 Encrypted
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  value={experience}
+                  onChange={(e) => setExperience(e.target.value)}
+                  placeholder="3"
+                  min="0"
+                  max="50"
+                  className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white placeholder-[rgba(255,255,255,0.3)] focus:outline-none focus:border-[rgba(124,58,237,0.5)] transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[rgba(255,255,255,0.7)] text-sm font-medium mb-2 flex items-center gap-2">
+                  <Code className="w-4 h-4 text-neon-violet" /> Min Skill Level (1-100)
+                  <span className="text-xs text-neon-violet bg-[rgba(124,58,237,0.1)] px-2 py-0.5 rounded-full ml-1">
+                    🔒 Encrypted
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  value={skillScore}
+                  onChange={(e) => setSkillScore(e.target.value)}
+                  placeholder="70"
+                  min="1"
+                  max="100"
+                  className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white placeholder-[rgba(255,255,255,0.3)] focus:outline-none focus:border-[rgba(124,58,237,0.5)] transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Location */}
             <div>
               <label className="text-[rgba(255,255,255,0.7)] text-sm font-medium mb-2 flex items-center gap-2">
-                <Code className="w-4 h-4 text-neon-violet" /> Required Skills
+                <MapPin className="w-4 h-4 text-neon-green" /> Location Preference
+                <span className="text-xs text-neon-green bg-[rgba(0,255,136,0.1)] px-2 py-0.5 rounded-full ml-1">
+                  🔒 Encrypted
+                </span>
               </label>
-              <input
-                value={skills}
-                onChange={(e) => setSkills(e.target.value)}
-                placeholder="Solidity, React, FHE..."
-                className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white placeholder-[rgba(255,255,255,0.3)] focus:outline-none focus:border-[rgba(124,58,237,0.5)] transition-all"
-              />
+              <select
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[rgba(0,255,136,0.5)] transition-all"
+              >
+                {LOCATION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value} className="bg-[#0a0a0f]">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Description */}
@@ -158,7 +212,7 @@ export function PostJobForm() {
             <div>
               <label className="text-[rgba(255,255,255,0.7)] text-sm font-medium mb-2 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-neon-green" /> Signing Bonus (ETH
-                via Privara Escrow)
+                — auto-released on match)
               </label>
               <input
                 type="number"
@@ -169,7 +223,7 @@ export function PostJobForm() {
                 className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white placeholder-[rgba(255,255,255,0.3)] focus:outline-none focus:border-[rgba(0,255,136,0.5)] transition-all"
               />
               <p className="text-xs text-[rgba(255,255,255,0.3)] mt-1">
-                Optional. Funded to Privara confidential escrow
+                Optional. Locked on-chain and auto-released to matched candidate
               </p>
             </div>
 
