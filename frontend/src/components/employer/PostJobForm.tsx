@@ -7,7 +7,8 @@ import { NeonButton } from "../ui/NeonButton";
 import { EncryptedBadge } from "../ui/EncryptedBadge";
 import { HIRESHIELD_ABI, HIRESHIELD_ADDRESS } from "../../lib/constants";
 import { useFHEEncrypt } from "../../hooks/useFHEEncrypt";
-import { Briefcase, DollarSign, Code, Lock, MapPin, Clock } from "lucide-react";
+import { Briefcase, DollarSign, Code, Lock, MapPin, Clock, Tag } from "lucide-react";
+import { txUrl } from "../../lib/etherscan";
 import toast from "react-hot-toast";
 
 const LOCATION_OPTIONS = [
@@ -27,6 +28,7 @@ export function PostJobForm() {
   const [skillScore, setSkillScore] = useState("");
   const [location, setLocation] = useState("1");
   const [escrowBonus, setEscrowBonus] = useState("0");
+  const [category, setCategory] = useState("");
   const [step, setStep] = useState<"form" | "encrypting" | "confirming">("form");
 
   const { encrypt, isEncrypting, isFheReady } = useFHEEncrypt();
@@ -54,15 +56,25 @@ export function PostJobForm() {
 
       setStep("confirming");
 
-      await writeContractAsync({
+      const fnName = category ? "postJobWithCategory" : "postJob";
+      const args = category
+        ? [encBudget as any, encExperience as any, encSkills as any, encLocation as any, title, description, category]
+        : [encBudget as any, encExperience as any, encSkills as any, encLocation as any, title, description];
+
+      const hash = await writeContractAsync({
         address: HIRESHIELD_ADDRESS,
         abi: HIRESHIELD_ABI,
-        functionName: "postJob",
-        args: [encBudget as any, encExperience as any, encSkills as any, encLocation as any, title, description],
+        functionName: fnName,
+        args: args as any,
         value: parseEther(escrowBonus || "0"),
       });
 
-      toast.success("Job posted confidentially! 🔒");
+      if (hash) {
+        toast.success(
+          <span>Job posted! <a href={txUrl(hash)} target="_blank" rel="noreferrer" className="underline text-neon-cyan">View on Etherscan</a></span>
+        );
+      }
+
       setStep("form");
       setTitle("");
       setDescription("");
@@ -71,6 +83,7 @@ export function PostJobForm() {
       setSkillScore("");
       setLocation("1");
       setEscrowBonus("0");
+      setCategory("");
     } catch (err) {
       console.error(err);
       toast.error("Transaction failed. Please try again.");
@@ -191,6 +204,26 @@ export function PostJobForm() {
                     {opt.label}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="text-[rgba(255,255,255,0.7)] text-sm font-medium mb-2 flex items-center gap-2">
+                <Tag className="w-4 h-4 text-neon-cyan" /> Category (for analytics)
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[rgba(0,212,255,0.5)] transition-all"
+              >
+                <option value="" className="bg-[#0a0a0f]">No category</option>
+                <option value="Engineering" className="bg-[#0a0a0f]">Engineering</option>
+                <option value="Design" className="bg-[#0a0a0f]">Design</option>
+                <option value="Marketing" className="bg-[#0a0a0f]">Marketing</option>
+                <option value="Operations" className="bg-[#0a0a0f]">Operations</option>
+                <option value="Finance" className="bg-[#0a0a0f]">Finance</option>
+                <option value="Sales" className="bg-[#0a0a0f]">Sales</option>
               </select>
             </div>
 

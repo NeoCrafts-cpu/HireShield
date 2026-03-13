@@ -3,6 +3,7 @@ import { HIRESHIELD_ABI, HIRESHIELD_ADDRESS } from "../lib/constants";
 
 interface MatchResult {
   isMatched: boolean;
+  qualificationChecked: boolean;
   candidate: string;
   jobId: bigint;
 }
@@ -23,6 +24,7 @@ export function useMatchJob(applicationId: number | undefined) {
   const matchResult: MatchResult | undefined = data
     ? {
         candidate: (data as any)[0],
+        qualificationChecked: (data as any)[6],
         isMatched: (data as any)[7],
         jobId: (data as any)[8],
       }

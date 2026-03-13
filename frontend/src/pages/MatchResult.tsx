@@ -1,8 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useMatchJob } from "../hooks/useMatchJob";
 import { useJob } from "../hooks/useJobList";
 import { useEscrow } from "../hooks/useEscrow";
+import { useNegotiation } from "../hooks/useNegotiation";
 import { GlassCard } from "../components/ui/GlassCard";
 import { NeonButton } from "../components/ui/NeonButton";
 import { EncryptedBadge } from "../components/ui/EncryptedBadge";
@@ -12,6 +14,8 @@ import { FHEStatusIndicator } from "../components/shared/FHEStatusIndicator";
 import { Navbar } from "../components/layout/Navbar";
 import { Footer } from "../components/layout/Footer";
 import { AuroraBackground } from "../components/ui/AuroraBackground";
+import { txUrl, addressUrl } from "../lib/etherscan";
+import { HIRESHIELD_ADDRESS } from "../lib/constants";
 import {
   CheckCircle,
   XCircle,
@@ -20,6 +24,8 @@ import {
   Coins,
   Lock,
   PartyPopper,
+  ExternalLink,
+  RefreshCw,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -31,6 +37,8 @@ export function MatchResult() {
   const jobId = matchResult?.jobId ? Number(matchResult.jobId) : undefined;
   const { job } = useJob(jobId);
   const { claimBonus, isClaiming, escrowAmount } = useEscrow(jobId);
+  const { negotiationRound, canNegotiate, submitCounterOffer, isPending: isNegotiating } = useNegotiation(applicationId);
+  const [counterSalary, setCounterSalary] = useState("");
 
   const handleAccept = async () => {
     if (!jobId) return;
@@ -38,6 +46,29 @@ export function MatchResult() {
       await claimBonus(jobId);
     } catch {
       // toast already shown by hook
+    }
+  };
+
+  const handleCounterOffer = async () => {
+    if (!counterSalary) {
+      toast.error("Enter a counter salary");
+      return;
+    }
+    try {
+      const hash = await submitCounterOffer(BigInt(counterSalary));
+      if (hash) {
+        toast.success(
+          <span>
+            Counter-offer sent!{" "}
+            <a href={txUrl(hash)} target="_blank" rel="noreferrer" className="underline text-neon-cyan">
+              View tx
+            </a>
+          </span>
+        );
+      }
+      setCounterSalary("");
+    } catch (err: any) {
+      toast.error(err?.shortMessage || "Counter-offer failed");
     }
   };
 
@@ -236,6 +267,66 @@ export function MatchResult() {
                 </NeonButton>
               </motion.div>
             )}
+
+            {/* Negotiation Section */}
+            {matchResult?.qualificationChecked && !matchResult?.isMatched && canNegotiate && (
+              <motion.div
+                className="mt-6 glass p-5 rounded-2xl border border-[rgba(139,92,246,0.2)]"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <RefreshCw className="w-4 h-4 text-neon-violet" />
+                  <h3 className="text-white font-heading font-bold text-sm">
+                    Counter-Offer (Round {negotiationRound + 1}/3)
+                  </h3>
+                </div>
+                <p className="text-[rgba(255,255,255,0.4)] text-xs mb-4">
+                  Submit an updated salary expectation. It will be FHE-encrypted and re-evaluated.
+                </p>
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    value={counterSalary}
+                    onChange={(e) => setCounterSalary(e.target.value)}
+                    placeholder="New salary (e.g. 90000)"
+                    className="flex-1 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-[rgba(255,255,255,0.2)] focus:outline-none focus:border-neon-violet"
+                  />
+                  <NeonButton
+                    variant="secondary"
+                    size="md"
+                    onClick={handleCounterOffer}
+                    loading={isNegotiating}
+                    icon={<RefreshCw className="w-4 h-4" />}
+                  >
+                    Send
+                  </NeonButton>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Etherscan Links */}
+            <div className="mt-6 flex items-center gap-4 text-xs text-[rgba(255,255,255,0.3)]">
+              <a
+                href={addressUrl(HIRESHIELD_ADDRESS)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 hover:text-neon-cyan transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" /> Contract on Etherscan
+              </a>
+              {job && (
+                <a
+                  href={addressUrl(job.employer)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1 hover:text-neon-cyan transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" /> Employer
+                </a>
+              )}
+            </div>
           </GlassCard>
         </main>
         <Footer />

@@ -6,7 +6,8 @@ import { NeonButton } from "../ui/NeonButton";
 import { EncryptedBadge } from "../ui/EncryptedBadge";
 import { HIRESHIELD_ABI, HIRESHIELD_ADDRESS } from "../../lib/constants";
 import { useFHEEncrypt } from "../../hooks/useFHEEncrypt";
-import { DollarSign, Award, Lock, Send, MapPin, Clock } from "lucide-react";
+import { DollarSign, Award, Lock, Send, MapPin, Clock, Users } from "lucide-react";
+import { txUrl } from "../../lib/etherscan";
 import toast from "react-hot-toast";
 
 const LOCATION_OPTIONS = [
@@ -28,6 +29,7 @@ export function ApplyForm({ jobId, jobTitle }: ApplyFormProps) {
   const [experience, setExperience] = useState("");
   const [skillScore, setSkillScore] = useState("");
   const [location, setLocation] = useState("1");
+  const [referrer, setReferrer] = useState("");
   const [step, setStep] = useState<"form" | "encrypting" | "confirming">("form");
 
   const { encrypt } = useFHEEncrypt();
@@ -50,19 +52,35 @@ export function ApplyForm({ jobId, jobTitle }: ApplyFormProps) {
 
       setStep("confirming");
 
-      await writeContractAsync({
-        address: HIRESHIELD_ADDRESS,
-        abi: HIRESHIELD_ABI,
-        functionName: "applyToJob",
-        args: [BigInt(jobId), encSalary as any, encExperience as any, encSkills as any, encLocation as any],
-      });
+      let hash: string | undefined;
+      if (referrer && referrer.startsWith("0x") && referrer.length === 42) {
+        const encReferrerId = await encrypt(BigInt(Math.floor(Math.random() * 1000000)), "euint32");
+        hash = await writeContractAsync({
+          address: HIRESHIELD_ADDRESS,
+          abi: HIRESHIELD_ABI,
+          functionName: "applyWithReferral",
+          args: [BigInt(jobId), encSalary as any, encExperience as any, encSkills as any, encLocation as any, referrer as `0x${string}`, encReferrerId as any],
+        });
+      } else {
+        hash = await writeContractAsync({
+          address: HIRESHIELD_ADDRESS,
+          abi: HIRESHIELD_ABI,
+          functionName: "applyToJob",
+          args: [BigInt(jobId), encSalary as any, encExperience as any, encSkills as any, encLocation as any],
+        });
+      }
 
-      toast.success("Application submitted confidentially! 🔒");
+      if (hash) {
+        toast.success(
+          <span>Applied! <a href={txUrl(hash)} target="_blank" rel="noreferrer" className="underline text-neon-violet">View on Etherscan</a></span>
+        );
+      }
       setStep("form");
       setExpectedSalary("");
       setExperience("");
       setSkillScore("");
       setLocation("1");
+      setReferrer("");
     } catch (err) {
       console.error(err);
       toast.error("Application failed. Please try again.");
@@ -168,6 +186,22 @@ export function ApplyForm({ jobId, jobTitle }: ApplyFormProps) {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Referral (optional) */}
+            <div>
+              <label className="text-[rgba(255,255,255,0.7)] text-sm font-medium mb-2 flex items-center gap-2">
+                <Users className="w-4 h-4 text-neon-amber" /> Referrer Address (optional)
+              </label>
+              <input
+                value={referrer}
+                onChange={(e) => setReferrer(e.target.value)}
+                placeholder="0x..."
+                className="w-full bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl px-4 py-3 text-white placeholder-[rgba(255,255,255,0.3)] focus:outline-none focus:border-[rgba(255,191,0,0.5)] transition-all font-mono text-sm"
+              />
+              <p className="text-xs text-[rgba(255,255,255,0.3)] mt-1">
+                Referrer identity stays encrypted until you're hired
+              </p>
             </div>
 
             <NeonButton

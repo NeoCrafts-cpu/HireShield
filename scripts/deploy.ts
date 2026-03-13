@@ -39,13 +39,31 @@ async function main() {
   await linkTx.wait();
   console.log("Escrow linked to HireShield ✅");
 
+  // Deploy Soulbound NFT Credential
+  const NFT = await ethers.deployContract("HireShieldNFT", []);
+  await NFT.waitForDeployment();
+  const nftAddress = await NFT.getAddress();
+  console.log("HireShieldNFT deployed to:", nftAddress);
+
+  // Link NFT to HireShield
+  const nftLinkTx = await NFT.setHireShieldContract(hireShieldAddress);
+  await nftLinkTx.wait();
+  console.log("NFT linked to HireShield ✅");
+
+  // Tell HireShield about the NFT contract
+  const setNftTx = await HireShield.setNFTContract(nftAddress);
+  await setNftTx.wait();
+  console.log("HireShield linked to NFT ✅");
+
   console.log("\n--- Deployment Summary ---");
   console.log("HireShieldEscrow:", escrowAddress);
   console.log("HireShield:", hireShieldAddress);
+  console.log("HireShieldNFT:", nftAddress);
   console.log("CoFHE Node:", cofheNodeAddress);
   console.log("\nUpdate your frontend/.env with:");
   console.log(`VITE_HIRESHIELD_ADDRESS=${hireShieldAddress}`);
   console.log(`VITE_ESCROW_ADDRESS=${escrowAddress}`);
+  console.log(`VITE_NFT_ADDRESS=${nftAddress}`);
 }
 
 main().catch((error) => {
